@@ -1,6 +1,17 @@
 ---
-# Feel free to add content and custom Front Matter to this file.
-# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
-
-layout: home
+layout: default
+title: Home
 ---
+
+# Stellar Perspectives
+
+![Header Image](/assets/images/header.png)
+
+## Section 1
+Content for section 1.
+
+## Section 2
+Content for section 2.
+
+## Section 3
+Content for section 3.
