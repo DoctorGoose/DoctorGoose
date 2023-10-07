@@ -1,10 +1,20 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>{{ page.title }}</title>
-  </head>
-  <body>
+<head>
+  <title>{{ page.title }}</title>
+  <link rel="stylesheet" href="/assets/main.css">
+  <style>
+    /* Smooth scroll */
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="/assets/header_with_title.png" alt="Header Image" style="width:100%;">
+  </div>
+  <div class="content">
     {{ content }}
-  </body>
+  </div>
+</body>
 </html>
