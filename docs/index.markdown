@@ -1,6 +1,6 @@
-# Dr. Jordan J.A. Weaver - Stellar Perspectives
+# Doctor Goose - Stellar Perspectives
 
-![Header Image](assets/header_image.png)
+![Header Image](assets/header.png)
 
 ## Introduction
 Welcome to Stellar Perspectives, a platform that offers a unique blend of expertise in chemical engineering, data science, and education. We specialize in leveraging advanced computational methods to solve complex problems. Whether it's data analysis, machine learning, or mechanistic modeling, we've got it covered.
