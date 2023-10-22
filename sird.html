@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>SIRD Epidemic Model Demo</title>
+  <link href="https://pyscript.net/alpha/pyscript.css" rel="stylesheet"/>
+  <script defer="" src="https://pyscript.net/alpha/pyscript.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="theme.css" rel="stylesheet"/>
+  <py-env>numpy, scipy</py-env>
+  
+</head>
+<body>
+    <div id="sird-inputs">
+        <h2>Model Parameters:</h2>
+        <label for="susceptible">Initial Susceptible:</label>
+        <input id="susceptible" name="susceptible" type="number" value="999"/><br/><br/>
+        <label for="infected">Initial Infected:</label>
+        <input id="infected" name="infected" type="number" value="1"/><br/><br/>
+        <label for="recovered">Initial Recovered:</label>
+        <input id="recovered" name="recovered" type="number" value="0"/><br/><br/>
+        <label for="deceased">Initial Deceased:</label>
+        <input id="deceased" name="deceased" type="number" value="0"/><br/><br/>
+        <label for="beta">Rate of Infection (β):</label>
+        <input id="beta" name="beta" step="0.01" type="number" value="0.3"/><br/><br/>
+        <label for="gamma">Rate of Recovery (γ):</label>
+        <input id="gamma" name="gamma" step="0.01" type="number" value="0.1"/><br/><br/>
+        <label for="mu">Rate of Death (μ):</label>
+        <input id="mu" name="mu" step="0.01" type="number" value="0.01"/><br/><br/>
+    </div>
+
+    <py-script>
+        import numpy as np
+        from scipy.integrate import solve_ivp
+        import json
+
+        def sird_model(t, y, beta, gamma, mu):
+            S, I, R, D = y
+            dS = -beta * S * I
+            dI = beta * S * I - gamma * I - mu * I
+            dR = gamma * I
+            dD = mu * I
+            return [dS, dI, dR, dD]
+
+        S0 = float(document.getElementById("susceptible").value)
+        I0 = float(document.getElementById("infected").value)
+        R0 = float(document.getElementById("recovered").value)
+        D0 = float(document.getElementById("deceased").value)
+        beta = float(document.getElementById("beta").value)
+        gamma = float(document.getElementById("gamma").value)
+        mu = float(document.getElementById("mu").value)
+
+        t_span = (0, 100)
+        t_eval = np.linspace(*t_span, 500)
+        solution = solve_ivp(sird_model, t_span, [S0, I0, R0, D0], t_eval=t_eval, args=(beta, gamma, mu))
+        plot_data = {
+            "time": list(t_eval),
+            "S": list(solution.y[0]),
+            "I": list(solution.y[1]),
+            "R": list(solution.y[2]),
+            "D": list(solution.y[3]),
+        }
+        output_json = json.dumps(plot_data)
+    </py-script>
+
+    <script>
+        function updateSIRDModel() {
+            console.log("updateSIRDModel triggered");
+            let plotData = JSON.parse(pyodide.runPython("return output_json"));
+            // TODO: Update the Chart.js plot with the new model data
+        }
+
+        document.querySelectorAll("#sird-inputs input").forEach(input => {
+            input.addEventListener("input", updateSIRDModel);
+        });
+
+        updateSIRDModel();
+    </script>
+
+    <div id="sird-plots">
+        <h2>Linear Scale:</h2>
+        <canvas id="sird-plot-linear"></canvas>
+        <h2>Logarithmic Scale:</h2>
+        <canvas id="sird-plot-log"></canvas>
+    </div>
+</body>
+</html>
