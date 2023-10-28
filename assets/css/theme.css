@@ -1,0 +1,68 @@
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('../fonts/Roboto-Bold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+/* Reset some default browser styles */
+body, h1, h2, h3, p, ul, li {
+  margin: 0;
+  padding: 0;
+}
+
+/* Universal styling */
+body {
+  padding: 20px;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f4f4f4;
+}
+
+/* Typography */
+h1, h2, h3 {
+  color: #333;
+}
+h1 {
+  font-size: 2em;
+}
+h2 {
+  font-size: 1.5em;
+}
+p {
+  font-size: 1em;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* Color Scheme */
+.primary-text {
+  color: #333; /* Black for primary text */
+}
+.secondary-text {
+  color: #777; /* Gray for secondary text */
+}
+.accent {
+  color: #006400; /* Deep green for accents */
+}
+.highlight {
+  color: #DAA520; /* Gold for highlights */
+}
+
+/* Media Queries */
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+  }
+  h1, h2, h3 {
+    font-size: 1.2em;
+  }
+  p {
+    font-size: 0.9em;
+  }
+}
