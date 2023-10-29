@@ -66,3 +66,62 @@ p {
     font-size: 0.9em;
   }
 }
+
+/* Profile Section */
+.profile-section {
+    text-align: center;
+    padding: 20px;
+    background-color: #f9f9f9; /* Light gray background */
+}
+
+/* Profile Picture */
+.profile-pic {
+    border-radius: 50%; /* Rounded picture */
+    width: 150px; /* Fixed width */
+    height: auto; /* Maintain aspect ratio */
+    border: 3px solid #006400; /* Deep green border */
+}
+
+additional_css_for_footer = """
+/* One-line footer */
+.footer-nav {
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.inline {
+    display: inline;
+}
+
+.inline-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.inline-list li {
+    display: inline;
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+/* One-line footer */
+.footer-nav {
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.inline {
+    display: inline;
+}
+
+.inline-list {
+    list-style-type: none;
+    padding-left: 0;
+    display: inline;  /* Make the entire list inline */
+}
+
+.inline-list li {
+    display: inline;
+    margin-right: 5px;
+    margin-left: 5px;
+}
