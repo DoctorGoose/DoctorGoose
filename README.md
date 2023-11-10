@@ -1,47 +1,11 @@
-# DoctorGoose RPG Campaign
+# Hello, I'm Dr. Goose 👋
 
-Welcome to the DoctorGoose RPG Campaign GitHub repository. Here you'll find all the resources needed to run the campaign.
+I'm a Postdoctoral Researcher with a focus on immunology, viral dynamics, mechanistic modeling, and algorithm development.
 
-## Table of Contents
+## About Me
 
-- [Realms](./Realms)
-  - [realm1](./Realms/realm1.md)
-  - [realm2](./Realms/realm2.md)
-  - [realm3](./Realms/realm3.md)
-
-- [Regions](./Regions)
-  - [region1](./Regions/region1.md)
-  - [region2](./Regions/region2.md)
-  - [region3](./Regions/region3.md)
-
-- [Cities](./Cities)
-  - [city1](./Cities/city1.md)
-  - [city2](./Cities/city2.md)
-  - [city3](./Cities/city3.md)
-
-- [Adventures](./Adventures)
-  - [adventure1](./Adventures/adventure1.md)
-  - [adventure2](./Adventures/adventure2.md)
-  - [adventure3](./Adventures/adventure3.md)
-
-- [Quests](./Quests)
-  - [quest1](./Quests/quest1.md)
-  - [quest2](./Quests/quest2.md)
-  - [quest3](./Quests/quest3.md)
-
-- [Sessions](./Sessions)
-  - [session1](./Sessions/session1.md)
-  - [session2](./Sessions/session2.md)
-  - [session3](./Sessions/session3.md)
-
-- [Character-Journals](./Character-Journals)
-  - [character1](./Character-Journals/character1.md)
-  - [character2](./Character-Journals/character2.md)
-  - [character3](./Character-Journals/character3.md)
-
-- [NPC-Compendium](./NPC-Compendium)
-  - [npcs](./NPC-Compendium/npcs.md)
-
-- [Party-Inventory](./Party-Inventory)
-  - [inventory](./Party-Inventory/inventory.md)
-
+- 🦠 My research revolves around modeling the cellular and cytokine immune response to influenza and SARS-CoV-2.
+- 🖥️ Proficient in Python, MATLAB, Java, Visual Basic, Julia, LabView, and R.
+- 📊 Experience with Python packages like NumPy, Pandas, SciPy, Numba, Scikit-learn, PyTorch, and more.
+- 🎙️ Presented at **AIChE** and **ISCB** national conferences.
+- 🧑‍🏫 Passionate about educating and mentoring the next generation of engineers and scientists.
