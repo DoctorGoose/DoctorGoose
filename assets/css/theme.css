@@ -82,6 +82,12 @@ p {
     border: 3px solid #006400; /* Deep green border */
 }
 
+/* Add a class for the logo in your HTML and reference it in CSS */
+.logo {
+  max-width: 200px; /* Adjust this value to fit your design */
+  height: auto; /* This will keep the aspect ratio intact */
+}
+
 additional_css_for_footer = """
 /* One-line footer */
 .footer-nav {
