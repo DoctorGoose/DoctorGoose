@@ -131,3 +131,19 @@ additional_css_for_footer = """
     margin-right: 5px;
     margin-left: 5px;
 }
+
+.blog-preview-image {
+  width: 100%; /* or any other width */
+  height: auto;
+  border-radius: 8px; /* optional, for rounded corners */
+}
+
+.image-container {
+  text-align: center;
+}
+
+.blog-image {
+  width: 25%; /* Adjust as needed */
+  height: auto;
+}
+
