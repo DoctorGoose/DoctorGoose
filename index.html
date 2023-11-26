@@ -8,43 +8,74 @@
     <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body>
-    <!-- Main Hero Section -->
     <header class="hero full-width">
-        <h1>Stellar Perspectives Limited</h1>
-        <h2>Launch Tomorrow.</h2>
-        <img src="assets/images/hero-image.png" alt="Stellar Perspectives Limited Company logo" class="logo">
+        <h1 class="site-title">Stellar Perspectives</h1>
+        <img src="assets/images/logo.png" alt="Stellar Perspectives Logo" class="logo" id="logo">
     </header>
 
-    <!-- About Us Overview -->
-<section class="about-overview">
-    <div class="about-content">
-        <h2>About Stellar Perspectives</h2>
-        <p>We are a partnership dedicated to pioneering research at the intersection of computational technology and ecological science. Our services span from data-driven analysis to sustainable solutions.</p>
-        <a href="contact.html" class="cta-button">Contact Stellar Perspectives</a>
-    </div>
-</section>
-
-    <!-- Profile Section -->
+ <!-- Profile Section -->
     <section class="profile-section">
         <div class="profile full-width">
+            <h2> About the Founder </h2> 
             <img class="profile-pic" src="assets/images/dr-goose-profile.jpg" alt="Dr. Goose">
-            <h2>Dr. Jordan J.A. Weaver</h2>
-            <p>Research Engineer and Visionary Co-founder</p>
-            <a href="dr-goose-profile.html" class="cta-button">Full Profile</a>
-        </div>
+            <h2><a href="dr-goose-profile.html" class="cta-button">Dr. Jordan J.A. Weaver</a></h2>
+            <p>Founder & Lead Researcher</p>
+            <br> <p>Driven by a passion for unraveling the mysteries of the immune system and leveraging data analysis and machine learning, Dr. Jordan J.A. Weaver is a highly accomplished chemical engineer specializing in data analysis, mechanistic modeling, and machine learning for immunity-related research. With a Doctor of Philosophy in Chemical Engineering from the University of Pittsburgh.</p>
+            <br> <p> As a Postdoctoral Researcher at the University of Tennessee Health Science Center, Jordan has delved into the intricate world of viral infections, specifically focusing on modeling the innate immune response to influenza and SARS-CoV-2. Their expertise in developing predictive models and utilizing information theory has provided invaluable insights into the dynamics of immune response and viral replication.  </p>
+    </div>
         <!-- Partner's profile section commented out for future use
         <div class="profile half-width">
             <img class="profile-pic" src="assets/images/partner-profile.jpg" alt="Partner">
-            <h2>Partner's Name</h2>
-            <p>Expert Biologist and Co-founder</p>
+            <h2>Name</h2>
+            <p>Conservation Biologist and Co-founder</p>
             <a href="partner-profile.html" class="cta-button">My Profile</a>
         </div>
         -->
     </section>
 
+    <!-- About Us Overview -->
+<section class="body-content">
+    <h2>Expanding the Horizons of Life and Intelligence</h2>
+
+    <br><p>At Stellar Perspectives, we are inspired by the vast potential of life and intelligence within the universe.</p>
+
+    <br><h3>Our Vision</h3>
+    <ul>
+        <br><li><strong>Understanding Our Place:</strong> Recognizing that complex life, as we know it, is a unique and emergent phenomenon, we advocate for expanding our sphere of influence within the universe. This expansion is not just about reaching out into the cosmos but also about deepening our understanding and stewardship of our own planet.</li>
+        <br><li><strong>Encountering Intelligence:</strong> As we extend our reach, we open possibilities for encountering other forms of intelligence. Such interactions could lead to unprecedented advancements in knowledge, technology, and a deeper understanding of life.</li>
+        <br><li><strong>Embracing Our Potential:</strong> We believe in the power of self-replicating, intelligent systems - a concept not limited to machines but inherent in ourselves. By exploring and embracing this potential, we aim to influence our future both on Earth and in the wider universe.</li>
+        <br><li><strong>Navigating Challenges:</strong> Our journey requires us to navigate the challenges and opportunities of our time. From environmental stewardship to technological innovation, we are committed to guiding humanity towards a sustainable and prosperous future.</li>
+    </ul>
+
+    <br><h3>Our Approach</h3>
+    <br><p>Through cutting-edge research in machine learning, biology, and sustainability, we strive to unlock new horizons for intelligent life. We believe in the power of collaboration - bringing together diverse minds and perspectives to tackle the complex challenges of our time. In our pursuit to expand life's influence, we remain committed to ethical considerations, ensuring that our actions benefit not just humanity but all life forms.</p>
+
+    <br><p><strong>Join Us:</strong> We invite you to join us on this extraordinary journey, as we work towards a future where life and intelligence flourish, both on our home planet and beyond.</p>
+</section>
+
+<div id="contact">
+    <h2>Get in Touch</h2>
+    <form action="https://formspree.io/f/mzbllenb" method="post">
+        <fieldset id="fs-frm-inputs">
+            <label for="full-name">Name</label>
+            <input type="text" name="name" id="full-name" placeholder="name" required="">
+
+            <label for="email-address">Email Address</label>
+            <input type="email" name="_replyto" id="email-address" placeholder="email" required="">
+
+            <label for="message">Message</label>
+            <textarea rows="5" name="message" id="message" placeholder="message" required=""></textarea>
+            
+            <input type="hidden" name="_subject" id="email-subject" value="Contact Form Submission">
+        </fieldset>
+        <input type="submit" value="Submit">
+    </form>
+</div>
+
     <!-- Footer -->
     <footer>
         <div class="footer-nav">
+            <br>
             <p>&copy; 2023 by Stellar Perspectives Limited. All Rights Reserved.</p>
             <a href="index.html">Home</a> | 
             <a href="contact.html">Contact Us</a> | 
