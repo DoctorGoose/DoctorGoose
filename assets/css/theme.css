@@ -27,7 +27,6 @@ h1, h2, h3 {
 /* Universal styling */
 body {
   font-family: 'Roboto', sans-serif;
-  background-color: #f4f4f4;
 }
 /* Color Scheme */
 .primary-text {
@@ -38,6 +37,7 @@ body {
 }
 .accent {
   color: white; /* White for contrast text */
+  background-color: black;
 }
 .highlight {
   color: #DAA520; /* Gold for highlights */
@@ -45,8 +45,7 @@ body {
 
 /* Profile Section */
 .profile-section {
-    padding: 50px;
-    background-color: #f9f9f9; /* Light gray background */
+    padding: 20px;
     text-align: center;
 }
 
@@ -105,6 +104,7 @@ body {
 .hero {
   width: 100%; /* Full width */
   background-color: black;
+
   text-align: center;
   padding: auto; auto; /* Vertical padding, no horizontal padding */
 }
@@ -126,7 +126,6 @@ body {
  
 /* Break to white background for the rest of the site content */
 .body-content {
-  background-color: white;
   color: black;
   text-align: justify;
   padding: 50px;
