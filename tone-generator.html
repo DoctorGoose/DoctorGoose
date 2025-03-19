@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Real-Time Audio Generator (Refined)</title>
+
+  <!-- 1) PyScript + required packages -->
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <py-config>
+  packages = [
+    "matplotlib",
+    "numpy"
+  ]
+  </py-config>
+
+  <style>
+    /* -----------------------
+       Fixed-Width Container
+       ----------------------- */
+    .container {
+      width: 1000px;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 1rem;
+      box-sizing: border-box;
+      font-family: sans-serif;
+    }
+
+    /* For large text and clearer UI */
+    h1, h2, h3 {
+      margin: 0.5rem 0;
+    }
+
+    /* Dark/Light Mode Classes */
+    .dark-mode {
+      background-color: #333;
+      color: #fff;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .light-mode {
+      background-color: #fff;
+      color: #000;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Frequency Graph + Slider Layout */
+    .frequency-graph {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+    }
+    .slider-container {
+      width: 100%;
+      margin: 1rem 0;
+    }
+    #freqSlider {
+      width: 1000px;  /* fixed width for the slider */
+      max-width: 100%;
+    }
+
+    /* Waveform Selection */
+    .waveform-selection {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .waveform-box {
+      width: 120px;
+      border: 2px solid gray;
+      text-align: center;
+      cursor: pointer;
+      transition: border 0.3s;
+    }
+    .waveform-box.selected {
+      border-color: blue;
+    }
+
+    /* Quick Select Buttons */
+    .quick-select-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .quick-button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .quick-button.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Controls */
+    .controls {
+      margin: 1rem 0;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .toggle-button {
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+
+    /* PyScript Output (Plot) */
+    #waveformPlot {
+      width: 1000px;
+      max-width: 100%;
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+  </style>
+
+  <script>
+    // ------------------------
+    // Dark/Light Mode Detection
+    // ------------------------
+    window.addEventListener("load", () => {
+      const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      function applyTheme(e) {
+        if (e.matches) {
+          document.body.classList.add("dark-mode");
+          document.body.classList.remove("light-mode");
+        } else {
+          document.body.classList.add("light-mode");
+          document.body.classList.remove("dark-mode");
+        }
+      }
+      darkModeMediaQuery.addEventListener("change", applyTheme);
+      applyTheme(darkModeMediaQuery);
+    });
+
+    // ------------------------
+    // Web Audio Setup
+    // ------------------------
+    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let oscillator = null;
+    let gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.5;
+    gainNode.connect(audioCtx.destination);
+
+    // State variables
+    let isTonePlaying = false;
+    let isProMode = false;
+    let currentWaveform = 'sine';
+    
+    // Frequencies for Quick Select (includes extended)
+    const freqPresets = [1, 5, 10, 30, 100, 200, 1000, 2500, 5000, 10000, 15000, 20000, 40000];
+
+    // On page load, build the quick select buttons
+    window.addEventListener("DOMContentLoaded", () => {
+      buildQuickSelectButtons();
+      toggleProMode();  // Initialize button states
+      updateFrequency(0.5); // Initialize frequency to mid slider
+    });
+
+    // ------------------------
+    // Build Quick Select Buttons
+    // ------------------------
+    function buildQuickSelectButtons() {
+      const container = document.getElementById("quickSelectContainer");
+      container.innerHTML = ""; // clear existing
+      freqPresets.forEach(freq => {
+        const btn = document.createElement("button");
+        btn.classList.add("quick-button");
+        btn.innerText = freq >= 1000 ? `${freq / 1000} kHz` : `${freq} Hz`;
+        btn.onclick = () => {
+          if (!btn.classList.contains("disabled")) {
+            jumpToFrequency(freq);
+          }
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    // ------------------------
+    // Toggle Pro Mode
+    // ------------------------
+    function toggleProMode() {
+      isProMode = document.getElementById("proModeToggle").checked;
+      document.getElementById("proModeInfo").style.display = isProMode ? "block" : "none";
+
+      // Update quick select button states
+      const buttons = document.querySelectorAll(".quick-button");
+      buttons.forEach(btn => {
+        let text = btn.innerText.replace(" kHz", "000").replace(" Hz", "");
+        let freqValue = parseFloat(text);
+        if (btn.innerText.includes("kHz")) {
+          // e.g. "5 kHz" => "5000" after replacement
+        }
+        // If freqValue is less than 20 or more than 20000, disable unless pro mode
+        if (!isProMode && (freqValue < 20 || freqValue > 20000)) {
+          btn.classList.add("disabled");
+        } else {
+          btn.classList.remove("disabled");
+        }
+      });
+    }
+
+    // ------------------------
+    // Frequency Slider (Log Scale)
+    // ------------------------
+    function updateFrequency(sliderValue) {
+      // minFreq / maxFreq based on pro mode
+      let minFreq = isProMode ? 1 : 20;
+      let maxFreq = isProMode ? 40000 : 20000;
+      let freq = minFreq * Math.pow(maxFreq / minFreq, sliderValue);
+
+      // Display
+      document.getElementById("freqDisplay").innerText = `${Math.round(freq)} Hz`;
+      // Update oscillator if playing
+      if (oscillator) {
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      }
+    }
+
+    // ------------------------
+    // Jump to a specific frequency
+    // ------------------------
+    function jumpToFrequency(freq) {
+      // Adjust slider to match freq
+      let minFreq = isProMode ? 1 : 20;
+      let maxFreq = isProMode ? 40000 : 20000;
+      // Clamp freq within range
+      if (!isProMode) {
+        freq = Math.max(freq, 20);
+        freq = Math.min(freq, 20000);
+      }
+      let sliderVal = Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
+      let slider = document.getElementById("freqSlider");
+      slider.value = sliderVal;
+      updateFrequency(sliderVal);
+    }
+
+    // ------------------------
+    // Waveform Selection
+    // ------------------------
+    function selectWaveform(type) {
+      currentWaveform = type;
+      if (oscillator && type !== "half-sine") {
+        oscillator.type = type;
+      } else if (oscillator && type === "half-sine") {
+        oscillator.type = "sine";
+      }
+      // UI highlight
+      const waveforms = ["sine", "sawtooth", "square", "triangle", "half-sine"];
+      waveforms.forEach(w => {
+        document.getElementById("box-" + w).classList.remove("selected");
+      });
+      document.getElementById("box-" + type).classList.add("selected");
+    }
+
+    // ------------------------
+    // Volume Control
+    // ------------------------
+    function updateVolume(value) {
+      gainNode.gain.setValueAtTime(value, audioCtx.currentTime);
+    }
+
+    // ------------------------
+    // Start/Stop Tone Toggle
+    // ------------------------
+    function toggleTone() {
+      if (!isTonePlaying) {
+        startTone();
+        document.getElementById("toggleToneButton").innerText = "Stop Tone";
+        isTonePlaying = true;
+      } else {
+        stopTone();
+        document.getElementById("toggleToneButton").innerText = "Start Tone";
+        isTonePlaying = false;
+      }
+    }
+
+    function startTone() {
+      if (oscillator) oscillator.stop();
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = (currentWaveform === "half-sine") ? "sine" : currentWaveform;
+      let freq = parseFloat(document.getElementById("freqDisplay").innerText);
+      oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      oscillator.connect(gainNode);
+      oscillator.start();
+    }
+
+    function stopTone() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator = null;
+      }
+    }
+
+    // ------------------------
+    // 5-Second Sweep
+    // ------------------------
+    function sweepFrequency() {
+      if (oscillator) oscillator.stop();
+      let minFreq = isProMode ? 1 : 20;
+      let maxFreq = isProMode ? 40000 : 20000;
+      let duration = 5;
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = (currentWaveform === "half-sine") ? "sine" : currentWaveform;
+      oscillator.frequency.setValueAtTime(minFreq, audioCtx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(maxFreq, audioCtx.currentTime + duration);
+      oscillator.connect(gainNode);
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+        oscillator = null;
+        isTonePlaying = false;
+        document.getElementById("toggleToneButton").innerText = "Start Tone";
+      }, duration * 1000);
+    }
+
+    // ------------------------
+    // Update the PyScript Plot (Optional Real-Time Approach)
+    // ------------------------
+    // For a one-time plot, we just do it in the py-script below.
+    // If you want to dynamically re-plot when frequency or waveform changes,
+    // you can call a Python function from JS (PyScript supports an 'src' or 'exec' trick).
+  </script>
+</head>
+<body>
+  <div class="container">
+
+    <h1>Real-Time Frequency Generator (Refined)</h1>
+
+    <!-- Pro Mode Toggle -->
+    <div class="controls">
+      <label>
+        <input type="checkbox" id="proModeToggle" onchange="toggleProMode()" />
+        Enable Pro Mode (1 Hz – 40 kHz)
+      </label>
+      <div id="proModeInfo" style="display: none; margin-top: 0.5rem; padding: 0.5rem; border: 1px solid; border-radius: 0.5rem;">
+        <strong>Warning:</strong> Human hearing is typically 20 Hz – 20 kHz. Many speakers/headphones cannot reproduce beyond this range.
+      </div>
+    </div>
+
+    <!-- Frequency Response Graph (Placeholder) -->
+    <img
+      src="assets/images/frequency_response.png"
+      alt="Frequency Response Graph"
+      class="frequency-graph"
+      style="width: 1000px;"
+    />
+
+    <!-- Frequency Slider -->
+    <div class="slider-container">
+      <h2>Frequency: <span id="freqDisplay">1000 Hz</span></h2>
+      <input
+        type="range"
+        id="freqSlider"
+        min="0"
+        max="1"
+        step="0.001"
+        value="0.5"
+        oninput="updateFrequency(this.value)"
+      />
+    </div>
+
+    <!-- Quick Select Buttons -->
+    <div class="quick-select-buttons" id="quickSelectContainer"></div>
+
+    <!-- Waveform Selection -->
+    <div class="waveform-selection">
+      <div class="waveform-box selected" onclick="selectWaveform('sine')" id="box-sine">
+        <img src="assets/images/sine.png" alt="Sine" style="width: 100px; height: 100px;" /><br />Sine
+      </div>
+      <div class="waveform-box" onclick="selectWaveform('sawtooth')" id="box-sawtooth">
+        <img src="assets/images/sawtooth.png" alt="Sawtooth" style="width: 100px; height: 100px;" /><br />Sawtooth
+      </div>
+      <div class="waveform-box" onclick="selectWaveform('square')" id="box-square">
+        <img src="assets/images/square.png" alt="Square" style="width: 100px; height: 100px;" /><br />Square
+      </div>
+      <div class="waveform-box" onclick="selectWaveform('triangle')" id="box-triangle">
+        <img src="assets/images/triangle.png" alt="Triangle" style="width: 100px; height: 100px;" /><br />Triangle
+      </div>
+      <div class="waveform-box" onclick="selectWaveform('half-sine')" id="box-half-sine">
+        <img src="assets/images/half-sine.png" alt="Half-Sine" style="width: 100px; height: 100px;" /><br />Half-Sine
+      </div>
+    </div>
+
+    <!-- Volume Slider -->
+    <div class="slider-container">
+      <h3>Volume</h3>
+      <input
+        type="range"
+        id="volumeSlider"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.5"
+        oninput="updateVolume(this.value)"
+        style="width: 1000px;"
+      />
+    </div>
+
+    <!-- Controls: Start/Stop Toggle & Sweep -->
+    <div class="controls">
+      <button class="toggle-button" id="toggleToneButton" onclick="toggleTone()">Start Tone</button>
+      <button class="toggle-button" onclick="sweepFrequency()">Sweep (5 sec)</button>
+    </div>
+
+    <!-- PyScript Matplotlib Plot -->
+    <div id="waveformPlot">
+      <py-script output="waveformOutput">
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Example: a single-time plot of a 440 Hz sine wave
+# For a "live" approach, you'd dynamically re-run this code
+# with updated frequency/waveform from JavaScript.
+
+sr = 44100
+duration = 0.01  # 10 ms for a short snippet
+t = np.linspace(0, duration, int(sr*duration), endpoint=False)
+freq = 440
+waveform = np.sin(2 * np.pi * freq * t)
+
+plt.figure(figsize=(8, 3))
+plt.plot(t[:1000], waveform[:1000])
+plt.xlabel("Time (s)")
+plt.ylabel("Amplitude")
+plt.title("Example Waveform (440 Hz Sine)")
+plt.tight_layout()
+plt.show()
+      </py-script>
+    </div>
+
+  </div>
+</body>
+</html>
