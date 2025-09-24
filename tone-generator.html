@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Real-Time Audio Generator (Refined)</title>
+  <title>Audio Generator & Acoustic Analysis Suite</title>
 
-  <!-- 1) PyScript + required packages -->
+  <!-- PyScript + required packages -->
   <script defer src="https://pyscript.net/latest/pyscript.js"></script>
   <py-config>
   packages = [
@@ -15,163 +15,505 @@
   </py-config>
 
   <style>
-    /* -----------------------
-       Fixed-Width Container
-       ----------------------- */
-    .container {
-      width: 1000px;
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 1rem;
-      box-sizing: border-box;
-      font-family: sans-serif;
+    /* Modern Design System */
+    :root {
+      --primary-color: #2563eb;
+      --secondary-color: #10b981;
+      --accent-color: #f59e0b;
+      --bg-light: #f8fafc;
+      --bg-dark: #1e293b;
+      --text-light: #1f2937;
+      --text-dark: #f1f5f9;
+      --border-light: #e2e8f0;
+      --border-dark: #475569;
+      --card-light: #ffffff;
+      --card-dark: #334155;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
 
-    /* For large text and clearer UI */
-    h1, h2, h3 {
+    /* Base Styles */
+    * { box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      transition: all 0.3s ease;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Theme Classes */
+    .light-mode {
+      background-color: var(--bg-light);
+      color: var(--text-light);
+    }
+    
+    .dark-mode {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding: 2rem 0;
+      border-bottom: 2px solid;
+    }
+    
+    .light-mode .header { border-color: var(--border-light); }
+    .dark-mode .header { border-color: var(--border-dark); }
+    
+    .header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.8;
+      margin: 0;
+    }
+
+    /* Section Cards */
+    .section-card {
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+    }
+    
+    .light-mode .section-card { 
+      background: var(--card-light); 
+      border: 1px solid var(--border-light);
+    }
+    
+    .dark-mode .section-card { 
+      background: var(--card-dark);
+      border: 1px solid var(--border-dark);
+    }
+    
+    .section-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin: 0 0 1.5rem 0;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Controls Grid */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .control-group {
+      background: rgba(59, 130, 246, 0.05);
+      padding: 1.5rem;
+      border-radius: 8px;
+      border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+
+    .control-group h3 {
+      margin: 0 0 1rem 0;
+      color: var(--primary-color);
+      font-size: 1.2rem;
+    }
+
+    /* Modern Sliders */
+    .slider-container {
+      margin: 1rem 0;
+    }
+    
+    .slider-container label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    
+    .frequency-display {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-left: 0.5rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--border-light);
+      outline: none;
+      -webkit-appearance: none;
       margin: 0.5rem 0;
     }
 
-    /* Dark/Light Mode Classes */
-    .dark-mode {
-      background-color: #333;
-      color: #fff;
-      transition: background-color 0.3s, color 0.3s;
-    }
-    .light-mode {
-      background-color: #fff;
-      color: #000;
-      transition: background-color 0.3s, color 0.3s;
-    }
-
-    /* Frequency Graph + Slider Layout */
-    .frequency-graph {
-      display: block;
-      width: 100%;
-      height: auto;
-      border: 1px solid #ccc;
-    }
-    .slider-container {
-      width: 100%;
-      margin: 1rem 0;
-    }
-    #freqSlider {
-      width: 1000px;  /* fixed width for the slider */
-      max-width: 100%;
-    }
-
-    /* Waveform Selection */
-    .waveform-selection {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin: 1rem 0;
-    }
-    .waveform-box {
-      width: 120px;
-      border: 2px solid gray;
-      text-align: center;
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary-color);
       cursor: pointer;
-      transition: border 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    .waveform-box.selected {
-      border-color: blue;
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
     /* Quick Select Buttons */
-    .quick-select-buttons {
+    .quick-buttons {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .quick-button {
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .quick-button.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+      margin: 1rem 0;
     }
 
-    /* Controls */
-    .controls {
+    .quick-button {
+      padding: 0.5rem 1rem;
+      border: 2px solid var(--primary-color);
+      background: transparent;
+      color: var(--primary-color);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .quick-button:hover:not(.disabled) {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .quick-button.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #94a3b8;
+      color: #94a3b8;
+    }
+
+    /* Waveform Selection */
+    .waveform-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
       margin: 1rem 0;
+    }
+
+    .waveform-box {
+      text-align: center;
+      padding: 1rem;
+      border: 2px solid var(--border-light);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255,255,255,0.5);
+    }
+
+    .dark-mode .waveform-box {
+      border-color: var(--border-dark);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .waveform-box:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    }
+
+    .waveform-box.selected {
+      border-color: var(--primary-color);
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .waveform-box img {
+      width: 80px;
+      height: 60px;
+      object-fit: contain;
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+    }
+
+    .waveform-box.selected img {
+      opacity: 1;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
       display: flex;
       gap: 1rem;
       flex-wrap: wrap;
-    }
-    .toggle-button {
-      font-size: 1rem;
-      padding: 0.5rem 1rem;
-      cursor: pointer;
+      margin: 2rem 0;
     }
 
-    /* PyScript Output (Plot) */
-    #waveformPlot {
-      width: 1000px;
-      max-width: 100%;
-      margin-top: 1rem;
-      border: 1px solid #ccc;
-      padding: 0.5rem;
-      box-sizing: border-box;
+    .btn {
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 140px;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--secondary-color);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-accent {
+      background: var(--accent-color);
+      color: white;
+    }
+
+    .btn-accent:hover {
+      background: #d97706;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--primary-color);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Pro Mode Warning */
+    .pro-warning {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      display: none;
+    }
+
+    .dark-mode .pro-warning {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+
+    /* Plot Container */
+    .plot-container {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 2rem 0;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-light);
+    }
+
+    .dark-mode .plot-container {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+
+    /* Acoustic Analysis Section */
+    .acoustic-analysis {
+      margin-top: 3rem;
+      padding-top: 3rem;
+      border-top: 2px solid var(--border-light);
+    }
+
+    .dark-mode .acoustic-analysis {
+      border-color: var(--border-dark);
+    }
+
+    .embed-container {
+      position: relative;
+      width: 100%;
+      height: 700px;
+      margin: 2rem 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .embed-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container { padding: 1rem; }
+      .header h1 { font-size: 2rem; }
+      .controls-grid { grid-template-columns: 1fr; }
+      .waveform-grid { grid-template-columns: repeat(2, 1fr); }
+      .action-buttons { flex-direction: column; }
+      .btn { min-width: auto; }
     }
   </style>
 
   <script>
-    // ------------------------
-    // Dark/Light Mode Detection
-    // ------------------------
+    // Theme Detection & Management
+    let currentTheme = 'light';
+    
     window.addEventListener("load", () => {
       const darkModeMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       function applyTheme(e) {
-        if (e.matches) {
-          document.body.classList.add("dark-mode");
-          document.body.classList.remove("light-mode");
-        } else {
-          document.body.classList.add("light-mode");
-          document.body.classList.remove("dark-mode");
-        }
+        currentTheme = e.matches ? 'dark' : 'light';
+        document.body.className = `${currentTheme}-mode`;
       }
       darkModeMediaQuery.addEventListener("change", applyTheme);
       applyTheme(darkModeMediaQuery);
     });
 
-    // ------------------------
-    // Web Audio Setup
-    // ------------------------
+    // Audio Context Setup
     let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let oscillator = null;
+    let filteredOscillator = null;
     let gainNode = audioCtx.createGain();
+    let filteredGainNode = audioCtx.createGain();
+    let analyserNode = audioCtx.createAnalyser();
+    let filteredAnalyserNode = audioCtx.createAnalyser();
+    
     gainNode.gain.value = 0.5;
+    filteredGainNode.gain.value = 0.5;
     gainNode.connect(audioCtx.destination);
+    filteredGainNode.connect(audioCtx.destination);
+    
+    // Canvas setup for visualization
+    let originalCanvas, filteredCanvas;
+    let originalCtx, filteredCtx;
+    let animationId;
 
-    // State variables
+    // Material properties for acoustic filtering
+    const materialProperties = {
+      '30-50': { flowResistivity: 8000, porosity: 0.85, name: '30-50 μm' },
+      '50-80': { flowResistivity: 4000, porosity: 0.88, name: '50-80 μm' },
+      '80-100': { flowResistivity: 2000, porosity: 0.90, name: '80-100 μm' }
+    };
+
+    // State Management
     let isTonePlaying = false;
     let isProMode = false;
     let currentWaveform = 'sine';
+    let currentFrequency = 1000;
     
-    // Frequencies for Quick Select (includes extended)
-    const freqPresets = [1, 5, 10, 30, 100, 200, 1000, 2500, 5000, 10000, 15000, 20000, 40000];
+    const freqPresets = [1, 5, 10, 30, 100, 200, 440, 1000, 2500, 5000, 10000, 15000, 20000, 40000];
 
-    // On page load, build the quick select buttons
+    // Initialize on page load
     window.addEventListener("DOMContentLoaded", () => {
       buildQuickSelectButtons();
-      toggleProMode();  // Initialize button states
-      updateFrequency(0.5); // Initialize frequency to mid slider
+      updateFrequency(0.5);
+      selectWaveform('sine');
+      initializeCanvases();
+      updateAcousticFilter();
     });
 
-    // ------------------------
-    // Build Quick Select Buttons
-    // ------------------------
+    // Initialize canvas elements
+    function initializeCanvases() {
+      originalCanvas = document.getElementById('originalCanvas');
+      filteredCanvas = document.getElementById('filteredCanvas');
+      originalCtx = originalCanvas.getContext('2d');
+      filteredCtx = filteredCanvas.getContext('2d');
+      
+      analyserNode.fftSize = 2048;
+      filteredAnalyserNode.fftSize = 2048;
+      
+      // Start visualization loop
+      visualize();
+    }
+
+    // Build frequency preset buttons
     function buildQuickSelectButtons() {
       const container = document.getElementById("quickSelectContainer");
-      container.innerHTML = ""; // clear existing
+      container.innerHTML = "";
       freqPresets.forEach(freq => {
         const btn = document.createElement("button");
         btn.classList.add("quick-button");
-        btn.innerText = freq >= 1000 ? `${freq / 1000} kHz` : `${freq} Hz`;
+        btn.innerText = freq >= 1000 ? `${freq / 1000}k` : `${freq}`;
         btn.onclick = () => {
           if (!btn.classList.contains("disabled")) {
             jumpToFrequency(freq);
@@ -179,24 +521,22 @@
         };
         container.appendChild(btn);
       });
+      updateButtonStates();
     }
 
-    // ------------------------
     // Toggle Pro Mode
-    // ------------------------
     function toggleProMode() {
       isProMode = document.getElementById("proModeToggle").checked;
-      document.getElementById("proModeInfo").style.display = isProMode ? "block" : "none";
+      document.getElementById("proModeWarning").style.display = isProMode ? "block" : "none";
+      updateButtonStates();
+      updateFrequency(document.getElementById("freqSlider").value);
+    }
 
-      // Update quick select button states
+    function updateButtonStates() {
       const buttons = document.querySelectorAll(".quick-button");
       buttons.forEach(btn => {
-        let text = btn.innerText.replace(" kHz", "000").replace(" Hz", "");
-        let freqValue = parseFloat(text);
-        if (btn.innerText.includes("kHz")) {
-          // e.g. "5 kHz" => "5000" after replacement
-        }
-        // If freqValue is less than 20 or more than 20000, disable unless pro mode
+        const text = btn.innerText.replace("k", "000");
+        const freqValue = parseFloat(text);
         if (!isProMode && (freqValue < 20 || freqValue > 20000)) {
           btn.classList.add("disabled");
         } else {
@@ -205,87 +545,82 @@
       });
     }
 
-    // ------------------------
-    // Frequency Slider (Log Scale)
-    // ------------------------
+    // Frequency Control
     function updateFrequency(sliderValue) {
-      // minFreq / maxFreq based on pro mode
-      let minFreq = isProMode ? 1 : 20;
-      let maxFreq = isProMode ? 40000 : 20000;
-      let freq = minFreq * Math.pow(maxFreq / minFreq, sliderValue);
-
-      // Display
-      document.getElementById("freqDisplay").innerText = `${Math.round(freq)} Hz`;
-      // Update oscillator if playing
+      const minFreq = isProMode ? 1 : 20;
+      const maxFreq = isProMode ? 40000 : 20000;
+      currentFrequency = Math.round(minFreq * Math.pow(maxFreq / minFreq, sliderValue));
+      
+      document.getElementById("freqDisplay").innerText = 
+        currentFrequency >= 1000 ? `${(currentFrequency/1000).toFixed(1)} kHz` : `${currentFrequency} Hz`;
+      
       if (oscillator) {
-        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        oscillator.frequency.setValueAtTime(currentFrequency, audioCtx.currentTime);
       }
+      if (filteredOscillator) {
+        filteredOscillator.frequency.setValueAtTime(currentFrequency, audioCtx.currentTime);
+      }
+      
+      // Update acoustic filter analysis
+      updateAcousticFilter();
     }
 
-    // ------------------------
-    // Jump to a specific frequency
-    // ------------------------
     function jumpToFrequency(freq) {
-      // Adjust slider to match freq
-      let minFreq = isProMode ? 1 : 20;
-      let maxFreq = isProMode ? 40000 : 20000;
-      // Clamp freq within range
-      if (!isProMode) {
-        freq = Math.max(freq, 20);
-        freq = Math.min(freq, 20000);
-      }
-      let sliderVal = Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
-      let slider = document.getElementById("freqSlider");
-      slider.value = sliderVal;
+      const minFreq = isProMode ? 1 : 20;
+      const maxFreq = isProMode ? 40000 : 20000;
+      freq = Math.max(freq, minFreq);
+      freq = Math.min(freq, maxFreq);
+      const sliderVal = Math.log(freq / minFreq) / Math.log(maxFreq / minFreq);
+      document.getElementById("freqSlider").value = sliderVal;
       updateFrequency(sliderVal);
     }
 
-    // ------------------------
     // Waveform Selection
-    // ------------------------
     function selectWaveform(type) {
       currentWaveform = type;
       if (oscillator && type !== "half-sine") {
         oscillator.type = type;
-      } else if (oscillator && type === "half-sine") {
-        oscillator.type = "sine";
       }
-      // UI highlight
+      
       const waveforms = ["sine", "sawtooth", "square", "triangle", "half-sine"];
       waveforms.forEach(w => {
-        document.getElementById("box-" + w).classList.remove("selected");
+        const box = document.getElementById("box-" + w);
+        if (box) box.classList.remove("selected");
       });
-      document.getElementById("box-" + type).classList.add("selected");
+      
+      const selectedBox = document.getElementById("box-" + type);
+      if (selectedBox) selectedBox.classList.add("selected");
     }
 
-    // ------------------------
     // Volume Control
-    // ------------------------
     function updateVolume(value) {
       gainNode.gain.setValueAtTime(value, audioCtx.currentTime);
+      document.getElementById("volumeDisplay").innerText = Math.round(value * 100) + "%";
     }
 
-    // ------------------------
-    // Start/Stop Tone Toggle
-    // ------------------------
+    // Audio Playback
     function toggleTone() {
       if (!isTonePlaying) {
         startTone();
-        document.getElementById("toggleToneButton").innerText = "Stop Tone";
+        document.getElementById("toggleButton").innerText = "Stop Tone";
+        document.getElementById("toggleButton").className = "btn btn-accent";
         isTonePlaying = true;
       } else {
         stopTone();
-        document.getElementById("toggleToneButton").innerText = "Start Tone";
+        document.getElementById("toggleButton").innerText = "Start Tone";
+        document.getElementById("toggleButton").className = "btn btn-primary";
         isTonePlaying = false;
       }
     }
 
     function startTone() {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
       if (oscillator) oscillator.stop();
       oscillator = audioCtx.createOscillator();
       oscillator.type = (currentWaveform === "half-sine") ? "sine" : currentWaveform;
-      let freq = parseFloat(document.getElementById("freqDisplay").innerText);
-      oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      oscillator.frequency.setValueAtTime(currentFrequency, audioCtx.currentTime);
       oscillator.connect(gainNode);
       oscillator.start();
     }
@@ -297,141 +632,361 @@
       }
     }
 
-    // ------------------------
-    // 5-Second Sweep
-    // ------------------------
     function sweepFrequency() {
       if (oscillator) oscillator.stop();
-      let minFreq = isProMode ? 1 : 20;
-      let maxFreq = isProMode ? 40000 : 20000;
-      let duration = 5;
+      const minFreq = isProMode ? 1 : 20;
+      const maxFreq = isProMode ? 40000 : 20000;
+      const duration = 5;
+      
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      
       oscillator = audioCtx.createOscillator();
       oscillator.type = (currentWaveform === "half-sine") ? "sine" : currentWaveform;
       oscillator.frequency.setValueAtTime(minFreq, audioCtx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(maxFreq, audioCtx.currentTime + duration);
       oscillator.connect(gainNode);
       oscillator.start();
+      
       setTimeout(() => {
-        oscillator.stop();
-        oscillator = null;
+        if (oscillator) {
+          oscillator.stop();
+          oscillator = null;
+        }
         isTonePlaying = false;
-        document.getElementById("toggleToneButton").innerText = "Start Tone";
+        document.getElementById("toggleButton").innerText = "Start Tone";
+        document.getElementById("toggleButton").className = "btn btn-primary";
       }, duration * 1000);
     }
 
-    // ------------------------
-    // Update the PyScript Plot (Optional Real-Time Approach)
-    // ------------------------
-    // For a one-time plot, we just do it in the py-script below.
-    // If you want to dynamically re-plot when frequency or waveform changes,
-    // you can call a Python function from JS (PyScript supports an 'src' or 'exec' trick).
+    // Material thickness control
+    function updateMaterialThickness(value) {
+      document.getElementById('materialThickness').innerText = value + 'mm';
+    }
+
+    // Calculate acoustic transfer function
+    function calculateTransferFunction(freq, material, thickness) {
+      const { flowResistivity: sigma, porosity: phi } = materialProperties[material];
+      const t_m = thickness / 1000; // convert mm to m
+      const omega = 2 * Math.PI * freq;
+      const rho0 = 1.21, c0 = 343, Z0 = rho0 * c0;
+
+      // Simplified Delany-Bazley model
+      const X = rho0 * freq / sigma;
+      const Zr = 1 + 0.0571 * Math.pow(X, -0.754);
+      const Zi = -0.087 * Math.pow(X, -0.732);
+      const kr = (omega / c0) * (1 + 0.0978 * Math.pow(X, -0.700));
+      const ki = -(omega / c0) * 0.189 * Math.pow(X, -0.595);
+
+      const Z_norm = Math.sqrt(Zr * Zr + Zi * Zi);
+      const Z_material = Z0 * Z_norm;
+      
+      const attenuation = Math.exp(ki * t_m);
+      const r_mag = Math.abs((Z_material - Z0) / (Z_material + Z0));
+      const R = Math.min(r_mag * r_mag, 0.99);
+      const t_mag = (4 * Z0 * Z_material) / Math.pow(Z0 + Z_material, 2);
+      const T = Math.min(t_mag * attenuation * attenuation, 1 - R);
+      const A = Math.max(0, 1 - R - T);
+
+      return {
+        reflection: R,
+        transmission: T,
+        absorption: A,
+        attenuation_dB: -20 * Math.log10(Math.sqrt(T) + 1e-10),
+        phase_degrees: kr * t_m * 180 / Math.PI
+      };
+    }
+
+    // Update acoustic filter display
+    function updateAcousticFilter() {
+      const poreSize = document.getElementById('poreSize').value;
+      const thickness = parseFloat(document.getElementById('materialThicknessSlider').value);
+      const freq = currentFrequency;
+      
+      const transfer = calculateTransferFunction(freq, poreSize, thickness);
+      
+      document.getElementById('currentFreqDisplay').innerText = 
+        freq >= 1000 ? `${(freq/1000).toFixed(1)} kHz` : `${freq} Hz`;
+      document.getElementById('reflectionValue').innerText = `${(transfer.reflection * 100).toFixed(0)}%`;
+      document.getElementById('absorptionValue').innerText = `${(transfer.absorption * 100).toFixed(0)}%`;
+      document.getElementById('transmissionValue').innerText = `${(transfer.transmission * 100).toFixed(0)}%`;
+      document.getElementById('attenuationValue').innerText = `${transfer.attenuation_dB.toFixed(1)} dB`;
+      document.getElementById('phaseValue').innerText = `${transfer.phase_degrees.toFixed(0)}°`;
+    }
+
+    // Play original tone
+    function playOriginalTone() {
+      stopAllTones();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      oscillator = audioCtx.createOscillator();
+      oscillator.type = (currentWaveform === "half-sine") ? "sine" : currentWaveform;
+      oscillator.frequency.setValueAtTime(currentFrequency, audioCtx.currentTime);
+      oscillator.connect(analyserNode);
+      oscillator.connect(gainNode);
+      oscillator.start();
+      
+      document.getElementById('originalToneBtn').innerText = "⏹️ Stop Original";
+      document.getElementById('originalToneBtn').onclick = stopAllTones;
+    }
+
+    // Play filtered tone (simulating through material)
+    function playFilteredTone() {
+      stopAllTones();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const poreSize = document.getElementById('poreSize').value;
+      const thickness = parseFloat(document.getElementById('materialThicknessSlider').value);
+      const transfer = calculateTransferFunction(currentFrequency, poreSize, thickness);
+      
+      // Create filtered oscillator with reduced amplitude and slight frequency shift
+      filteredOscillator = audioCtx.createOscillator();
+      filteredOscillator.type = (currentWaveform === "half-sine") ? "sine" : currentWaveform;
+      filteredOscillator.frequency.setValueAtTime(currentFrequency, audioCtx.currentTime);
+      
+      // Apply material filtering effects
+      filteredGainNode.gain.value = gainNode.gain.value * Math.sqrt(transfer.transmission);
+      
+      // Add some high-frequency rolloff for realism
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(currentFrequency * (2 - transfer.absorption), audioCtx.currentTime);
+      filter.Q.setValueAtTime(0.7, audioCtx.currentTime);
+      
+      filteredOscillator.connect(filter);
+      filter.connect(filteredAnalyserNode);
+      filter.connect(filteredGainNode);
+      filteredOscillator.start();
+      
+      document.getElementById('filteredToneBtn').innerText = "⏹️ Stop Filtered";
+      document.getElementById('filteredToneBtn').onclick = stopAllTones;
+    }
+
+    // A/B comparison
+    function compareAudio() {
+      playOriginalTone();
+      setTimeout(() => {
+        stopAllTones();
+        setTimeout(() => {
+          playFilteredTone();
+        }, 200);
+      }, 2000);
+    }
+
+    // Stop all audio sources
+    function stopAllTones() {
+      if (oscillator) {
+        oscillator.stop();
+        oscillator = null;
+      }
+      if (filteredOscillator) {
+        filteredOscillator.stop();
+        filteredOscillator = null;
+      }
+      document.getElementById('originalToneBtn').innerText = "▶️ Original Signal";
+      document.getElementById('originalToneBtn').onclick = playOriginalTone;
+      document.getElementById('filteredToneBtn').innerText = "▶️ Through Material";
+      document.getElementById('filteredToneBtn').onclick = playFilteredTone;
+    }
+
+    // Visualization loop
+    function visualize() {
+      if (!originalCanvas || !filteredCanvas) return;
+      
+      const bufferLength = analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      const filteredDataArray = new Uint8Array(bufferLength);
+      
+      function draw() {
+        animationId = requestAnimationFrame(draw);
+        
+        // Clear canvases
+        originalCtx.fillStyle = currentTheme === 'dark' ? '#334155' : '#f8fafc';
+        originalCtx.fillRect(0, 0, originalCanvas.width, originalCanvas.height);
+        filteredCtx.fillStyle = currentTheme === 'dark' ? '#334155' : '#f8fafc';
+        filteredCtx.fillRect(0, 0, filteredCanvas.width, filteredCanvas.height);
+        
+        if (oscillator) {
+          analyserNode.getByteTimeDomainData(dataArray);
+          drawWaveform(originalCtx, dataArray, '#2563eb');
+        }
+        
+        if (filteredOscillator) {
+          filteredAnalyserNode.getByteTimeDomainData(filteredDataArray);
+          drawWaveform(filteredCtx, filteredDataArray, '#10b981');
+        }
+      }
+      
+      draw();
+    }
+
+    function drawWaveform(ctx, dataArray, color) {
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      
+      const sliceWidth = ctx.canvas.width / dataArray.length;
+      let x = 0;
+      
+      for (let i = 0; i < dataArray.length; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * ctx.canvas.height) / 2;
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+      }
+      
+      ctx.stroke();
+    }
   </script>
 </head>
 <body>
   <div class="container">
+    
+    <!-- Header -->
+    <div class="header">
+      <h1>Audio Generator & Acoustic Analysis Suite</h1>
+      <p>Professional-grade tone generation and acoustic material analysis tools</p>
+    </div>
 
-    <h1>Real-Time Frequency Generator (Refined)</h1>
+    <!-- Tone Generator Section -->
+    <div class="section-card">
+      <h2 class="section-title">🎵 Precision Tone Generator</h2>
+      
+      <!-- Pro Mode Toggle -->
+      <div class="control-group">
+        <label style="display: flex; align-items: center; gap: 1rem; font-size: 1.1rem;">
+          <span class="toggle-switch">
+            <input type="checkbox" id="proModeToggle" onchange="toggleProMode()" />
+            <span class="toggle-slider"></span>
+          </span>
+          Enable Pro Mode (1 Hz – 40 kHz)
+        </label>
+        
+        <div id="proModeWarning" class="pro-warning">
+          <strong>⚠️ Extended Range Warning:</strong> Human hearing typically spans 20 Hz – 20 kHz. 
+          Many speakers and headphones cannot reproduce frequencies beyond this range accurately.
+        </div>
+      </div>
 
-    <!-- Pro Mode Toggle -->
-    <div class="controls">
-      <label>
-        <input type="checkbox" id="proModeToggle" onchange="toggleProMode()" />
-        Enable Pro Mode (1 Hz – 40 kHz)
-      </label>
-      <div id="proModeInfo" style="display: none; margin-top: 0.5rem; padding: 0.5rem; border: 1px solid; border-radius: 0.5rem;">
-        <strong>Warning:</strong> Human hearing is typically 20 Hz – 20 kHz. Many speakers/headphones cannot reproduce beyond this range.
+      <div class="controls-grid">
+        <!-- Frequency Control -->
+        <div class="control-group">
+          <h3>Frequency Control</h3>
+          <div class="slider-container">
+            <label>Frequency: <span id="freqDisplay" class="frequency-display">1.0 kHz</span></label>
+            <input type="range" id="freqSlider" min="0" max="1" step="0.001" value="0.5" 
+                   oninput="updateFrequency(this.value)" />
+          </div>
+          
+          <div class="quick-buttons" id="quickSelectContainer"></div>
+        </div>
+
+        <!-- Volume Control -->
+        <div class="control-group">
+          <h3>Volume Control</h3>
+          <div class="slider-container">
+            <label>Volume: <span id="volumeDisplay" class="frequency-display">50%</span></label>
+            <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5" 
+                   oninput="updateVolume(this.value)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Waveform Selection -->
+      <div class="control-group">
+        <h3>Waveform Selection</h3>
+        <div class="waveform-grid">
+          <div class="waveform-box selected" onclick="selectWaveform('sine')" id="box-sine">
+            <div style="width:80px;height:60px;background:linear-gradient(45deg,var(--primary-color),var(--secondary-color));border-radius:4px;margin:0 auto 0.5rem;"></div>
+            Sine
+          </div>
+          <div class="waveform-box" onclick="selectWaveform('sawtooth')" id="box-sawtooth">
+            <div style="width:80px;height:60px;background:linear-gradient(45deg,#ef4444,#f97316);border-radius:4px;margin:0 auto 0.5rem;"></div>
+            Sawtooth
+          </div>
+          <div class="waveform-box" onclick="selectWaveform('square')" id="box-square">
+            <div style="width:80px;height:60px;background:linear-gradient(45deg,#8b5cf6,#a855f7);border-radius:4px;margin:0 auto 0.5rem;"></div>
+            Square
+          </div>
+          <div class="waveform-box" onclick="selectWaveform('triangle')" id="box-triangle">
+            <div style="width:80px;height:60px;background:linear-gradient(45deg,#06b6d4,#0891b2);border-radius:4px;margin:0 auto 0.5rem;"></div>
+            Triangle
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn btn-primary" id="toggleButton" onclick="toggleTone()">Start Tone</button>
+        <button class="btn btn-secondary" onclick="sweepFrequency()">Frequency Sweep (5s)</button>
+      </div>
+
+      <!-- Waveform Visualization -->
+      <div class="plot-container" id="waveformPlot">
+        <div style="text-align: center; padding: 2rem; color: var(--primary-color);">
+          <h3 style="margin: 0 0 1rem 0;">📊 Waveform Analysis</h3>
+          <p style="margin: 0; opacity: 0.8;">Interactive waveform visualization will appear here when tone generation is active.</p>
+          <div style="margin: 2rem 0; padding: 2rem; border: 2px dashed rgba(37, 99, 235, 0.3); border-radius: 8px;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+              <div style="text-align: center;">
+                <div style="width: 100%; height: 60px; background: linear-gradient(45deg, var(--primary-color), transparent); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+                <small>Sine Wave</small>
+              </div>
+              <div style="text-align: center;">
+                <div style="width: 100%; height: 60px; background: linear-gradient(45deg, #ef4444, transparent); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+                <small>Square Wave</small>
+              </div>
+              <div style="text-align: center;">
+                <div style="width: 100%; height: 60px; background: linear-gradient(45deg, #8b5cf6, transparent); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+                <small>Sawtooth Wave</small>
+              </div>
+              <div style="text-align: center;">
+                <div style="width: 100%; height: 60px; background: linear-gradient(45deg, #06b6d4, transparent); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+                <small>Triangle Wave</small>
+              </div>
+            </div>
+            <p style="margin: 0; font-size: 0.9rem; opacity: 0.7;">Time domain and frequency spectrum analysis</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Frequency Response Graph (Placeholder) -->
-    <img
-      src="assets/images/frequency_response.png"
-      alt="Frequency Response Graph"
-      class="frequency-graph"
-      style="width: 1000px;"
-    />
+    <!-- Acoustic Analysis Section -->
+    <div class="section-card acoustic-analysis">
+      <h2 class="section-title">🔬 ESU Breathable Steel - Acoustic Analysis</h2>
+      
+      <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: 2rem;">
+        Analyze the frequency-dependent acoustic properties of ESU Breathable Steel with different pore sizes. 
+        This interactive tool shows how the material behaves as a frequency-selective acoustic membrane, 
+        displaying reflection, absorption, and transmission coefficients across the audio spectrum.
+      </p>
 
-    <!-- Frequency Slider -->
-    <div class="slider-container">
-      <h2>Frequency: <span id="freqDisplay">1000 Hz</span></h2>
-      <input
-        type="range"
-        id="freqSlider"
-        min="0"
-        max="1"
-        step="0.001"
-        value="0.5"
-        oninput="updateFrequency(this.value)"
-      />
-    </div>
-
-    <!-- Quick Select Buttons -->
-    <div class="quick-select-buttons" id="quickSelectContainer"></div>
-
-    <!-- Waveform Selection -->
-    <div class="waveform-selection">
-      <div class="waveform-box selected" onclick="selectWaveform('sine')" id="box-sine">
-        <img src="assets/images/sine.png" alt="Sine" style="width: 100px; height: 100px;" /><br />Sine
+      <div class="embed-container">
+        <iframe 
+          src="https://claude.site/public/artifacts/22166b3a-8232-4d11-930c-de7e8a026099/embed" 
+          title="ESU Breathable Steel Acoustic Analysis" 
+          allow="clipboard-write" 
+          allowfullscreen>
+        </iframe>
       </div>
-      <div class="waveform-box" onclick="selectWaveform('sawtooth')" id="box-sawtooth">
-        <img src="assets/images/sawtooth.png" alt="Sawtooth" style="width: 100px; height: 100px;" /><br />Sawtooth
+
+      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--secondary-color); border-radius: 8px; padding: 1.5rem; margin-top: 2rem;">
+        <h3 style="color: var(--secondary-color); margin: 0 0 1rem 0;">Key Features:</h3>
+        <ul style="margin: 0; padding-left: 1.5rem;">
+          <li><strong>Interactive Bode Plots:</strong> Standard audio engineering frequency scale (30 Hz - 20 kHz)</li>
+          <li><strong>Pore Size Comparison:</strong> Analyze 30-50, 50-80, and 80-100 μm pore ranges</li>
+          <li><strong>Adjustable Thickness:</strong> See how layer thickness affects acoustic resonances</li>
+          <li><strong>Energy Conservation:</strong> Visualize how sound energy is reflected, absorbed, or transmitted</li>
+          <li><strong>Material Optimization:</strong> Find the ideal configuration for your acoustic application</li>
+        </ul>
       </div>
-      <div class="waveform-box" onclick="selectWaveform('square')" id="box-square">
-        <img src="assets/images/square.png" alt="Square" style="width: 100px; height: 100px;" /><br />Square
-      </div>
-      <div class="waveform-box" onclick="selectWaveform('triangle')" id="box-triangle">
-        <img src="assets/images/triangle.png" alt="Triangle" style="width: 100px; height: 100px;" /><br />Triangle
-      </div>
-      <div class="waveform-box" onclick="selectWaveform('half-sine')" id="box-half-sine">
-        <img src="assets/images/half-sine.png" alt="Half-Sine" style="width: 100px; height: 100px;" /><br />Half-Sine
-      </div>
-    </div>
-
-    <!-- Volume Slider -->
-    <div class="slider-container">
-      <h3>Volume</h3>
-      <input
-        type="range"
-        id="volumeSlider"
-        min="0"
-        max="1"
-        step="0.01"
-        value="0.5"
-        oninput="updateVolume(this.value)"
-        style="width: 1000px;"
-      />
-    </div>
-
-    <!-- Controls: Start/Stop Toggle & Sweep -->
-    <div class="controls">
-      <button class="toggle-button" id="toggleToneButton" onclick="toggleTone()">Start Tone</button>
-      <button class="toggle-button" onclick="sweepFrequency()">Sweep (5 sec)</button>
-    </div>
-
-    <!-- PyScript Matplotlib Plot -->
-    <div id="waveformPlot">
-      <py-script output="waveformOutput">
-import matplotlib.pyplot as plt
-import numpy as np
-
-# Example: a single-time plot of a 440 Hz sine wave
-# For a "live" approach, you'd dynamically re-run this code
-# with updated frequency/waveform from JavaScript.
-
-sr = 44100
-duration = 0.01  # 10 ms for a short snippet
-t = np.linspace(0, duration, int(sr*duration), endpoint=False)
-freq = 440
-waveform = np.sin(2 * np.pi * freq * t)
-
-plt.figure(figsize=(8, 3))
-plt.plot(t[:1000], waveform[:1000])
-plt.xlabel("Time (s)")
-plt.ylabel("Amplitude")
-plt.title("Example Waveform (440 Hz Sine)")
-plt.tight_layout()
-plt.show()
-      </py-script>
     </div>
 
   </div>
