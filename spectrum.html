@@ -96,9 +96,30 @@
         
         canvas {
             width: 100%;
-            height: 300px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 5px;
+        }
+        
+        .waveform-canvas, .fft-canvas {
+            height: 300px;
+        }
+        
+        .spectrogram-canvas, .bode-canvas {
+            height: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .waveform-canvas, .fft-canvas {
+                height: 200px;
+            }
+            
+            .spectrogram-canvas {
+                height: 250px;
+            }
+            
+            .bode-canvas {
+                height: 250px;
+            }
         }
         
         .full-width {
@@ -135,6 +156,49 @@
             .grid {
                 grid-template-columns: 1fr;
             }
+            
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+                margin-bottom: 15px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .panel {
+                padding: 10px;
+            }
+            
+            .panel h2 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .info {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .info-item {
+                padding: 8px;
+            }
+            
+            .info-label {
+                font-size: 11px;
+            }
+            
+            .info-value {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -152,22 +216,22 @@
         <div class="grid">
             <div class="panel">
                 <h2>Waveform (Time Domain)</h2>
-                <canvas id="waveformCanvas"></canvas>
+                <canvas id="waveformCanvas" class="waveform-canvas"></canvas>
             </div>
             
             <div class="panel">
                 <h2>FFT Spectrum (Frequency Domain)</h2>
-                <canvas id="fftCanvas"></canvas>
+                <canvas id="fftCanvas" class="fft-canvas"></canvas>
             </div>
             
             <div class="panel full-width">
                 <h2>Spectrogram (Frequency vs Time Heatmap)</h2>
-                <canvas id="spectrogramCanvas"></canvas>
+                <canvas id="spectrogramCanvas" class="spectrogram-canvas"></canvas>
             </div>
             
             <div class="panel full-width">
                 <h2>Bode Plot (Magnitude Response)</h2>
-                <canvas id="bodeCanvas"></canvas>
+                <canvas id="bodeCanvas" class="bode-canvas"></canvas>
                 <div class="info">
                     <div class="info-item">
                         <div class="info-label">Peak Frequency</div>
