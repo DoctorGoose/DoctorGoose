@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaker Box Analyzer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.03) 0px,
+                transparent 1px,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 3px
+            );
+            pointer-events: none;
+            z-index: 1000;
+            animation: flicker 0.15s infinite;
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 0.95; }
+            50% { opacity: 1; }
+            100% { opacity: 0.95; }
+        }
+        
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #0f0;
+            background: #000;
+        }
+        
+        .header {
+            background: #000;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #0f0;
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #0f0;
+        }
+        
+        .header p {
+            opacity: 0.7;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            gap: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .controls-panel {
+            background: #000;
+            padding: 15px;
+            border-right: 2px solid #0f0;
+            overflow-y: auto;
+            max-height: calc(100vh - 124px);
+        }
+        
+        .controls-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .controls-panel::-webkit-scrollbar-track {
+            background: #000;
+        }
+        
+        .controls-panel::-webkit-scrollbar-thumb {
+            background: #0f0;
+            border: 1px solid #000;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+            background: #000;
+            padding: 12px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        .control-group h3 {
+            color: #0f0;
+            font-size: 1em;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 6px;
+            font-weight: 700;
+        }
+        
+        .param-control {
+            margin-bottom: 12px;
+        }
+        
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+            color: #0f0;
+        }
+        
+        .param-name {
+            font-weight: 400;
+            font-size: 0.9em;
+        }
+        
+        .param-value {
+            color: #0f0;
+            font-weight: 400;
+            font-size: 0.9em;
+            font-family: 'Courier Prime', monospace;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #111;
+            outline: none;
+            -webkit-appearance: none;
+            border: 1px solid #0f0;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #0f0;
+            cursor: pointer;
+            border: 1px solid #000;
+            box-shadow: 0 0 8px #0f0;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #0f0;
+            cursor: pointer;
+            border: 1px solid #000;
+            box-shadow: 0 0 8px #0f0;
+        }
+        
+        input[type="number"], input[type="text"], select {
+            background: #001100;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 4px;
+            font-family: 'Courier Prime', monospace;
+            font-size: 0.85em;
+        }
+        
+        button {
+            background: #000;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 400;
+            width: 100%;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-family: 'Courier Prime', monospace;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        button:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        
+        .viz-panel {
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            border-right: 2px solid #0f0;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+            cursor: grab;
+        }
+        
+        .canvas-container:active {
+            cursor: grabbing;
+        }
+        
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .plot-container {
+            height: 300px;
+            background: #000;
+            border-top: 2px solid #0f0;
+        }
+        
+        .stats-panel {
+            background: #000;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: calc(100vh - 124px);
+        }
+        
+        .stats-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        .stats-section h4 {
+            color: #0f0;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #0f0;
+            padding-bottom: 4px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.8em;
+        }
+        
+        .stat-label {
+            opacity: 0.8;
+        }
+        
+        .stat-value {
+            font-weight: 700;
+        }
+        
+        .warning {
+            color: #ff0;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+        
+        .info-text {
+            font-size: 0.75em;
+            color: #0f0;
+            line-height: 1.4;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+        
+        .brace-config {
+            background: #001100;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #0f0;
+        }
+        
+        .brace-config h5 {
+            font-size: 0.85em;
+            margin-bottom: 6px;
+            color: #0f0;
+        }
+        
+        #arrow-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: #0f0;
+            padding: 8px 12px;
+            border: 1px solid #0f0;
+            font-family: 'Courier Prime', monospace;
+            font-size: 0.85em;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="container">
+        <div class="header">
+            <h1>▓▒░ SPEAKER ENCLOSURE ANALYZER ░▒▓</h1>
+            <p>ACOUSTIC MODE & PANEL VIBRATION ANALYSIS SYSTEM v1.0</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Left Panel: Box Configuration -->
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>║ ENCLOSURE GEOMETRY ║</h3>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Volume (liters)</span>
+                            <span class="param-value" id="volume-value">10.0</span>
+                        </div>
+                        <input type="range" id="volume-slider" min="1" max="100" step="0.5" value="10">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Proportions</span>
+                        </div>
+                        <select id="proportion-select">
+                            <option value="golden">Golden (1:φ:φ²)</option>
+                            <option value="sqrt">Root (1:√2:√3)</option>
+                            <option value="fibonacci">Fibonacci (3:5:8)</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Ratio X (Width)</span>
+                        </div>
+                        <input type="number" id="ratio-x-input" min="0.5" max="5" step="0.01" value="1.00" style="width:100%;">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Ratio Y (Height)</span>
+                        </div>
+                        <input type="number" id="ratio-y-input" min="0.5" max="5" step="0.01" value="1.618" style="width:100%;">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Ratio Z (Depth)</span>
+                        </div>
+                        <input type="number" id="ratio-z-input" min="0.5" max="5" step="0.01" value="2.618" style="width:100%;">
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Panel Thickness</span>
+                        </div>
+                        <select id="thickness-select">
+                            <option value="12.5">1/2" (12.5mm)</option>
+                            <option value="18">3/4" (18mm)</option>
+                            <option value="19" selected>3/4" (19mm)</option>
+                            <option value="25">1" (25mm)</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <input type="number" id="thickness-custom" min="6" max="50" step="0.5" value="19" style="width:100%; margin-top:4px; display:none;">
+                    </div>
+                    
+                </div>
+                
+                <div class="control-group">
+                    <h3>║ MATERIAL PROPERTIES ║</h3>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Young's Modulus (GPa)</span>
+                        </div>
+                        <input type="number" id="material-E" min="1" max="20" step="0.1" value="3.5" style="width:100%;">
+                        <div class="info-text">MDF: 3.5, Plywood: 4.5, Particleboard: 2.8</div>
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Density (kg/m³)</span>
+                        </div>
+                        <input type="number" id="material-rho" min="400" max="1000" step="10" value="700" style="width:100%;">
+                        <div class="info-text">MDF: 700, Plywood: 650, Particleboard: 680</div>
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Poisson's Ratio</span>
+                        </div>
+                        <input type="number" id="material-nu" min="0.1" max="0.5" step="0.01" value="0.30" style="width:100%;">
+                        <div class="info-text">MDF: 0.30, Plywood: 0.28, Particleboard: 0.32</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>║ VISUALIZATION ║</h3>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Exploded View</span>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="explode-toggle" style="width: auto;">
+                            <span style="font-size: 0.85em;">Show panels separated</span>
+                        </label>
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Mode Arrows</span>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="mode-arrows-toggle" checked style="width: auto;">
+                            <span style="font-size: 0.85em;">Show acoustic mode directions</span>
+                        </label>
+                        <div class="info-text">Green=Axial, Yellow=Tangential, Magenta=Oblique</div>
+                    </div>
+                    
+                    <div class="param-control">
+                        <div class="param-label">
+                            <span class="param-name">Selected Panel</span>
+                        </div>
+                        <select id="panel-select">
+                            <option value="front">Front Baffle</option>
+                            <option value="back">Back Panel</option>
+                            <option value="left">Left Side</option>
+                            <option value="right">Right Side</option>
+                            <option value="top">Top Panel</option>
+                            <option value="bottom">Bottom Panel</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>║ ACTIONS ║</h3>
+                    <button id="reset-btn">▶ RESET</button>
+                    <button id="export-btn">▶ EXPORT DATA</button>
+                </div>
+            </div>
+            
+            <!-- Center Panel: 3D Visualization -->
+            <div class="viz-panel">
+                <div class="canvas-container">
+                    <canvas id="renderCanvas"></canvas>
+                    <div id="arrow-tooltip"></div>
+                </div>
+                <div class="plot-container">
+                    <div id="mode-plot" style="width:100%; height:100%;"></div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Analysis Results -->
+            <div class="stats-panel">
+                <div class="stats-section">
+                    <h4>ENCLOSURE DIMENSIONS</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Width (X):</span>
+                        <span class="stat-value" id="dim-x">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Height (Y):</span>
+                        <span class="stat-value" id="dim-y">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Depth (Z):</span>
+                        <span class="stat-value" id="dim-z">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Volume:</span>
+                        <span class="stat-value" id="dim-vol">---</span>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <h4>ACOUSTIC MODES</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">1st Axial:</span>
+                        <span class="stat-value" id="mode-1st">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">1st Tangential:</span>
+                        <span class="stat-value" id="mode-tan">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">1st Oblique:</span>
+                        <span class="stat-value" id="mode-obl">---</span>
+                    </div>
+                    <div class="info-text">First 20 modes plotted below. Look for mode clustering.</div>
+                </div>
+                
+                <div class="stats-section">
+                    <h4>PANEL ANALYSIS: <span id="current-panel-name">FRONT</span></h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Dimensions:</span>
+                        <span class="stat-value" id="panel-dims">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Fundamental Freq:</span>
+                        <span class="stat-value" id="panel-freq">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Mode Overlap:</span>
+                        <span class="stat-value" id="panel-overlap">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Bracing Status:</span>
+                        <span class="stat-value" id="panel-bracing">None</span>
+                    </div>
+                </div>
+                
+                <div class="stats-section">
+                    <h4>RADIATION ESTIMATE</h4>
+                    <div class="stat-row">
+                        <span class="stat-label">Unbraced Power:</span>
+                        <span class="stat-value" id="rad-unbraced">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Braced Power:</span>
+                        <span class="stat-value" id="rad-braced">---</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Reduction:</span>
+                        <span class="stat-value" id="rad-reduction">---</span>
+                    </div>
+                    <div class="info-text">Normalized units. Lower is better. Reduction in dB of panel radiation.</div>
+                </div>
+                
+                <div class="stats-section">
+                    <h4>ALL PANELS SUMMARY</h4>
+                    <div id="all-panels-summary"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Material properties database
+        const materials = {
+            mdf: {
+                E: 3.5e9,        // Young's modulus (Pa)
+                rho: 700,        // Density (kg/m³)
+                nu: 0.3,         // Poisson's ratio
+                name: 'MDF'
+            },
+            plywood: {
+                E: 4.5e9,
+                rho: 650,
+                nu: 0.28,
+                name: 'Baltic Birch Plywood'
+            },
+            particle: {
+                E: 2.8e9,
+                rho: 680,
+                nu: 0.32,
+                name: 'Particleboard'
+            }
+        };
+        
+        // Global state
+        let boxDimensions = { x: 0, y: 0, z: 0 };
+        let thickness = 19;
+        let material = {
+            E: 3.5e9,
+            rho: 700,
+            nu: 0.3,
+            name: 'MDF'
+        };
+        let acousticModes = [];
+        let panelData = {};
+        let panelMeshes = [];
+        let modeArrows = [];
+        let showModeArrows = true;
+        let isExploded = false;
+        
+        // Three.js scene
+        let scene, camera, renderer, boxMesh, braceLines = [];
+        let isDragging = false;
+        let previousMouse = { x: 0, y: 0 };
+        let rotation = { x: -0.3, y: 0.5 };
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let hoveredArrowIndex = -1;
+        let arrowToModeMap = []; // Maps arrow objects to mode indices
+        
+        // Speed of sound (m/s)
+        const c = 343;
+        
+        // Initialize Three.js
+        function initThreeJS() {
+            const canvas = document.getElementById('renderCanvas');
+            const container = canvas.parentElement;
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 2000);
+            camera.position.set(400, 300, 400);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            
+            // Lighting
+            const ambient = new THREE.AmbientLight(0x00ff00, 0.3);
+            scene.add(ambient);
+            
+            const light1 = new THREE.DirectionalLight(0x00ff00, 0.8);
+            light1.position.set(200, 200, 200);
+            scene.add(light1);
+            
+            const light2 = new THREE.DirectionalLight(0x00ff00, 0.4);
+            light2.position.set(-200, -100, -200);
+            scene.add(light2);
+            
+            // Grid
+            const gridHelper = new THREE.GridHelper(500, 50, 0x00ff00, 0x003300);
+            gridHelper.position.y = -50;
+            scene.add(gridHelper);
+            
+            // Mouse controls
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mousemove', onMouseHover);
+            document.addEventListener('mouseup', onMouseUp);
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            
+            animate();
+        }
+        
+        function onMouseDown(e) {
+            isDragging = true;
+            previousMouse = { x: e.clientX, y: e.clientY };
+        }
+        
+        function onMouseMove(e) {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMouse.x;
+                const deltaY = e.clientY - previousMouse.y;
+                
+                rotation.y += deltaX * 0.01;
+                rotation.x += deltaY * 0.01;
+                rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, rotation.x));
+                
+                updateCameraPosition();
+                previousMouse = { x: e.clientX, y: e.clientY };
+            }
+        }
+        
+        function onMouseUp() {
+            isDragging = false;
+        }
+        
+        function onMouseHover(e) {
+            if (isDragging) return;
+            
+            const canvas = document.getElementById('renderCanvas');
+            const rect = canvas.getBoundingClientRect();
+            
+            // Convert mouse position to normalized device coordinates
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            // Raycast to detect arrow hovers
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Get all arrow meshes (cones and cylinders)
+            const arrowMeshes = [];
+            modeArrows.forEach((arrow, idx) => {
+                if (arrow.cone) arrowMeshes.push({ mesh: arrow.cone, index: idx });
+                if (arrow.line) arrowMeshes.push({ mesh: arrow.line, index: idx });
+            });
+            
+            const intersects = raycaster.intersectObjects(arrowMeshes.map(a => a.mesh));
+            
+            if (intersects.length > 0) {
+                // Find which arrow was hit
+                const hitMesh = intersects[0].object;
+                const arrowInfo = arrowMeshes.find(a => a.mesh === hitMesh);
+                
+                if (arrowInfo && arrowInfo.index !== hoveredArrowIndex) {
+                    hoveredArrowIndex = arrowInfo.index;
+                    const modeIndex = arrowToModeMap[arrowInfo.index];
+                    
+                    if (modeIndex !== undefined) {
+                        highlightArrow(arrowInfo.index, true);
+                        highlightModePlot(modeIndex);
+                        showArrowTooltip(e.clientX, e.clientY, modeIndex);
+                    }
+                }
+            } else {
+                if (hoveredArrowIndex !== -1) {
+                    highlightArrow(hoveredArrowIndex, false);
+                    hoveredArrowIndex = -1;
+                    highlightModePlot(-1);
+                    hideArrowTooltip();
+                }
+            }
+        }
+        
+        function highlightArrow(arrowIndex, highlight) {
+            if (arrowIndex < 0 || arrowIndex >= modeArrows.length) return;
+            
+            const arrow = modeArrows[arrowIndex];
+            const scale = highlight ? 1.3 : 1.0;
+            const opacity = highlight ? 1.0 : 0.8;
+            
+            if (arrow.cone) {
+                arrow.cone.scale.set(scale, scale, scale);
+                arrow.cone.material.opacity = opacity;
+            }
+            if (arrow.line) {
+                arrow.line.scale.set(scale, scale, scale);
+                arrow.line.material.opacity = opacity;
+            }
+        }
+        
+        function showArrowTooltip(x, y, modeIndex) {
+            const tooltip = document.getElementById('arrow-tooltip');
+            const mode = acousticModes[modeIndex];
+            
+            if (mode) {
+                tooltip.innerHTML = `
+                    <strong>${mode.type.toUpperCase()} MODE ${mode.label}</strong><br>
+                    Frequency: ${mode.freq.toFixed(1)} Hz
+                `;
+                tooltip.style.left = (x + 15) + 'px';
+                tooltip.style.top = (y + 15) + 'px';
+                tooltip.style.display = 'block';
+            }
+        }
+        
+        function hideArrowTooltip() {
+            const tooltip = document.getElementById('arrow-tooltip');
+            tooltip.style.display = 'none';
+        }
+        
+        function updateCameraPosition() {
+            const distance = 400;
+            camera.position.x = distance * Math.cos(rotation.x) * Math.sin(rotation.y);
+            camera.position.y = distance * Math.sin(rotation.x);
+            camera.position.z = distance * Math.cos(rotation.x) * Math.cos(rotation.y);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        
+        // Calculate box dimensions from volume and ratios
+        // Given target volume and desired proportions (ratioX:ratioY:ratioZ),
+        // this solves for actual dimensions that maintain the volume
+        function calculateDimensions() {
+            const volume = parseFloat(document.getElementById('volume-slider').value);
+            const volumeM3 = volume / 1000; // liters to m³
+            
+            const ratioX = parseFloat(document.getElementById('ratio-x-input').value);
+            const ratioY = parseFloat(document.getElementById('ratio-y-input').value);
+            const ratioZ = parseFloat(document.getElementById('ratio-z-input').value);
+            
+            // For proportions x:y:z = ratioX:ratioY:ratioZ
+            // We have x = k·ratioX, y = k·ratioY, z = k·ratioZ
+            // Volume = k³·ratioX·ratioY·ratioZ
+            // Solving for k: k = (Volume / (ratioX·ratioY·ratioZ))^(1/3)
+            const k = Math.pow(volumeM3 / (ratioX * ratioY * ratioZ), 1/3);
+            
+            const x = k * ratioX;
+            const y = k * ratioY;
+            const z = k * ratioZ;
+            
+            boxDimensions = {
+                x: x * 1000, // Convert to mm
+                y: y * 1000,
+                z: z * 1000
+            };
+            
+            updateDisplay();
+        }
+        
+        // Calculate acoustic pressure modes
+        function calculateAcousticModes() {
+            const { x, y, z } = boxDimensions;
+            const Lx = x / 1000; // mm to m
+            const Ly = y / 1000;
+            const Lz = z / 1000;
+            
+            const modes = [];
+            
+            // Calculate first 20 modes
+            for (let nx = 0; nx <= 3; nx++) {
+                for (let ny = 0; ny <= 3; ny++) {
+                    for (let nz = 0; nz <= 3; nz++) {
+                        if (nx === 0 && ny === 0 && nz === 0) continue;
+                        
+                        const freq = (c / 2) * Math.sqrt(
+                            Math.pow(nx / Lx, 2) +
+                            Math.pow(ny / Ly, 2) +
+                            Math.pow(nz / Lz, 2)
+                        );
+                        
+                        let type = 'oblique';
+                        if ((nx > 0 && ny === 0 && nz === 0) ||
+                            (nx === 0 && ny > 0 && nz === 0) ||
+                            (nx === 0 && ny === 0 && nz > 0)) {
+                            type = 'axial';
+                        } else if ((nx > 0 && ny > 0 && nz === 0) ||
+                                   (nx > 0 && ny === 0 && nz > 0) ||
+                                   (nx === 0 && ny > 0 && nz > 0)) {
+                            type = 'tangential';
+                        }
+                        
+                        modes.push({
+                            nx, ny, nz,
+                            freq,
+                            type,
+                            label: `(${nx},${ny},${nz})`
+                        });
+                    }
+                }
+            }
+            
+            modes.sort((a, b) => a.freq - b.freq);
+            acousticModes = modes.slice(0, 20);
+            
+            return acousticModes;
+        }
+        
+        // Calculate panel resonant frequency
+        function calculatePanelFrequency(width, height, thickness, material) {
+            const h = thickness / 1000; // mm to m
+            const a = Math.max(width, height) / 1000; // longer dimension
+            const b = Math.min(width, height) / 1000; // shorter dimension
+            
+            // Flexural rigidity
+            const D = (material.E * Math.pow(h, 3)) / (12 * (1 - Math.pow(material.nu, 2)));
+            
+            // Fundamental frequency for simply supported rectangular plate
+            // Using approximate formula for (1,1) mode
+            const lambda = Math.PI * Math.sqrt(1/Math.pow(a, 2) + 1/Math.pow(b, 2));
+            const freq = (Math.pow(lambda, 2) / (2 * Math.PI)) * Math.sqrt(D / (material.rho * h));
+            
+            return freq;
+        }
+        
+        // Analyze all panels
+        function analyzePanels() {
+            const { x, y, z } = boxDimensions;
+            
+            panelData = {
+                front: { width: x, height: y, name: 'Front Baffle' },
+                back: { width: x, height: y, name: 'Back Panel' },
+                left: { width: z, height: y, name: 'Left Side' },
+                right: { width: z, height: y, name: 'Right Side' },
+                top: { width: x, height: z, name: 'Top Panel' },
+                bottom: { width: x, height: z, name: 'Bottom Panel' }
+            };
+            
+            for (const [key, panel] of Object.entries(panelData)) {
+                panel.freq = calculatePanelFrequency(panel.width, panel.height, thickness, material);
+                
+                // Check for mode overlap (within ±5%)
+                panel.overlaps = [];
+                for (const mode of acousticModes) {
+                    const diff = Math.abs(panel.freq - mode.freq) / mode.freq;
+                    if (diff < 0.05) {
+                        panel.overlaps.push(mode);
+                    }
+                }
+            }
+        }
+        
+
+        
+        // Update 3D visualization
+        function updateVisualization() {
+            // Remove old meshes
+            if (boxMesh) scene.remove(boxMesh);
+            panelMeshes.forEach(mesh => scene.remove(mesh));
+            panelMeshes = [];
+            modeArrows.forEach(arrow => {
+                if (arrow.group) {
+                    scene.remove(arrow.group);
+                } else {
+                    scene.remove(arrow);
+                }
+            });
+            modeArrows = [];
+            arrowToModeMap = [];
+            
+            const { x, y, z } = boxDimensions;
+            const t = thickness;
+            const selectedPanel = document.getElementById('panel-select').value;
+            
+            // Explode offset factor
+            const explodeOffset = isExploded ? 0.5 : 0;
+            
+            // Create individual panel meshes
+            const panels = [
+                // Front (X-Y plane, +Z)
+                {
+                    name: 'front',
+                    width: x, height: y, depth: t,
+                    position: { x: 0, y: 0, z: (z + t) / 2 },
+                    explodeDir: { x: 0, y: 0, z: 1 }
+                },
+                // Back (X-Y plane, -Z)
+                {
+                    name: 'back',
+                    width: x, height: y, depth: t,
+                    position: { x: 0, y: 0, z: -(z + t) / 2 },
+                    explodeDir: { x: 0, y: 0, z: -1 }
+                },
+                // Left (Z-Y plane, -X)
+                {
+                    name: 'left',
+                    width: t, height: y, depth: z + 2*t,
+                    position: { x: -(x + t) / 2, y: 0, z: 0 },
+                    explodeDir: { x: -1, y: 0, z: 0 }
+                },
+                // Right (Z-Y plane, +X)
+                {
+                    name: 'right',
+                    width: t, height: y, depth: z + 2*t,
+                    position: { x: (x + t) / 2, y: 0, z: 0 },
+                    explodeDir: { x: 1, y: 0, z: 0 }
+                },
+                // Top (X-Z plane, +Y)
+                {
+                    name: 'top',
+                    width: x + 2*t, height: t, depth: z + 2*t,
+                    position: { x: 0, y: (y + t) / 2, z: 0 },
+                    explodeDir: { x: 0, y: 1, z: 0 }
+                },
+                // Bottom (X-Z plane, -Y)
+                {
+                    name: 'bottom',
+                    width: x + 2*t, height: t, depth: z + 2*t,
+                    position: { x: 0, y: -(y + t) / 2, z: 0 },
+                    explodeDir: { x: 0, y: -1, z: 0 }
+                }
+            ];
+            
+            panels.forEach(panel => {
+                const geometry = new THREE.BoxGeometry(panel.width, panel.height, panel.depth);
+                
+                // Color based on selection
+                const isSelected = panel.name === selectedPanel;
+                const meshMaterial = new THREE.MeshBasicMaterial({
+                    color: isSelected ? 0xffff00 : 0x00ff00,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide
+                });
+                
+                const edges = new THREE.EdgesGeometry(geometry);
+                const edgeMaterial = new THREE.LineBasicMaterial({
+                    color: isSelected ? 0xffff00 : 0x00ff00,
+                    linewidth: 2
+                });
+                
+                const mesh = new THREE.Mesh(geometry, meshMaterial);
+                const wireframe = new THREE.LineSegments(edges, edgeMaterial);
+                
+                // Position with optional explode offset
+                const explodeDist = explodeOffset * Math.max(x, y, z) * 0.3;
+                mesh.position.set(
+                    panel.position.x + panel.explodeDir.x * explodeDist,
+                    panel.position.y + panel.explodeDir.y * explodeDist,
+                    panel.position.z + panel.explodeDir.z * explodeDist
+                );
+                wireframe.position.copy(mesh.position);
+                
+                scene.add(mesh);
+                scene.add(wireframe);
+                panelMeshes.push(mesh, wireframe);
+            });
+            
+            // Add mode direction arrows if enabled
+            if (showModeArrows && acousticModes.length > 0) {
+                createModeArrows();
+            }
+        }
+        
+        // Create arrows showing acoustic mode directions
+        function createModeArrows() {
+            const { x, y, z } = boxDimensions;
+            const maxDim = Math.max(x, y, z);
+            const arrowLength = maxDim * 0.4;
+            const arrowOffset = maxDim * 0.6;
+            
+            // Clear arrow-to-mode mapping
+            arrowToModeMap = [];
+            
+            // Get first few modes of each type
+            const axialModes = acousticModes.filter(m => m.type === 'axial').slice(0, 3);
+            const tangentialModes = acousticModes.filter(m => m.type === 'tangential').slice(0, 2);
+            const obliqueModes = acousticModes.filter(m => m.type === 'oblique').slice(0, 1);
+            
+            // Create arrows for axial modes (single direction)
+            axialModes.forEach((mode, idx) => {
+                const color = 0x00ff00; // Green for axial
+                let dir, origin;
+                
+                if (mode.nx > 0 && mode.ny === 0 && mode.nz === 0) {
+                    // X-direction
+                    dir = new THREE.Vector3(1, 0, 0);
+                    origin = new THREE.Vector3(-arrowOffset, idx * 30 - 30, 0);
+                } else if (mode.nx === 0 && mode.ny > 0 && mode.nz === 0) {
+                    // Y-direction
+                    dir = new THREE.Vector3(0, 1, 0);
+                    origin = new THREE.Vector3(idx * 30 - 30, -arrowOffset, 0);
+                } else if (mode.nx === 0 && mode.ny === 0 && mode.nz > 0) {
+                    // Z-direction
+                    dir = new THREE.Vector3(0, 0, 1);
+                    origin = new THREE.Vector3(0, idx * 30 - 30, -arrowOffset);
+                }
+                
+                if (dir) {
+                    const arrow = createCustomArrow(dir, origin, arrowLength, color, arrowLength * 0.2, arrowLength * 0.15);
+                    scene.add(arrow.group);
+                    modeArrows.push(arrow);
+                    
+                    // Map this arrow to its mode index
+                    const modeIndex = acousticModes.findIndex(m => 
+                        m.nx === mode.nx && m.ny === mode.ny && m.nz === mode.nz
+                    );
+                    arrowToModeMap.push(modeIndex);
+                }
+            });
+            
+            // Create arrows for tangential modes (two directions)
+            tangentialModes.forEach((mode, idx) => {
+                const color = 0xffff00; // Yellow for tangential
+                const offset = idx * 40;
+                
+                if (mode.nx > 0 && mode.ny > 0 && mode.nz === 0) {
+                    // X-Y plane
+                    const modeIndex = acousticModes.findIndex(m => 
+                        m.nx === mode.nx && m.ny === mode.ny && m.nz === mode.nz
+                    );
+                    
+                    const arrow1 = createCustomArrow(
+                        new THREE.Vector3(1, 0, 0),
+                        new THREE.Vector3(-arrowOffset, offset, offset),
+                        arrowLength * 0.7, color, arrowLength * 0.15, arrowLength * 0.1
+                    );
+                    const arrow2 = createCustomArrow(
+                        new THREE.Vector3(0, 1, 0),
+                        new THREE.Vector3(offset, -arrowOffset, offset),
+                        arrowLength * 0.7, color, arrowLength * 0.15, arrowLength * 0.1
+                    );
+                    scene.add(arrow1.group);
+                    scene.add(arrow2.group);
+                    modeArrows.push(arrow1, arrow2);
+                    arrowToModeMap.push(modeIndex, modeIndex);
+                } else if (mode.nx > 0 && mode.ny === 0 && mode.nz > 0) {
+                    // X-Z plane
+                    const modeIndex = acousticModes.findIndex(m => 
+                        m.nx === mode.nx && m.ny === mode.ny && m.nz === mode.nz
+                    );
+                    
+                    const arrow1 = createCustomArrow(
+                        new THREE.Vector3(1, 0, 0),
+                        new THREE.Vector3(-arrowOffset, offset, offset),
+                        arrowLength * 0.7, color, arrowLength * 0.15, arrowLength * 0.1
+                    );
+                    const arrow2 = createCustomArrow(
+                        new THREE.Vector3(0, 0, 1),
+                        new THREE.Vector3(offset, offset, -arrowOffset),
+                        arrowLength * 0.7, color, arrowLength * 0.15, arrowLength * 0.1
+                    );
+                    scene.add(arrow1.group);
+                    scene.add(arrow2.group);
+                    modeArrows.push(arrow1, arrow2);
+                    arrowToModeMap.push(modeIndex, modeIndex);
+                } else if (mode.nx === 0 && mode.ny > 0 && mode.nz > 0) {
+                    // Y-Z plane
+                    const modeIndex = acousticModes.findIndex(m => 
+                        m.nx === mode.nx && m.ny === mode.ny && m.nz === mode.nz
+                    );
+                    
+                    const arrow1 = createCustomArrow(
+                        new THREE.Vector3(0, 1, 0),
+                        new THREE.Vector3(offset, -arrowOffset, offset),
+                        arrowLength * 0.7, color, arrowLength * 0.15, arrowLength * 0.1
+                    );
+                    const arrow2 = createCustomArrow(
+                        new THREE.Vector3(0, 0, 1),
+                        new THREE.Vector3(offset, offset, -arrowOffset),
+                        arrowLength * 0.7, color, arrowLength * 0.15, arrowLength * 0.1
+                    );
+                    scene.add(arrow1.group);
+                    scene.add(arrow2.group);
+                    modeArrows.push(arrow1, arrow2);
+                    arrowToModeMap.push(modeIndex, modeIndex);
+                }
+            });
+            
+            // Create arrows for oblique modes (three directions)
+            obliqueModes.forEach((mode, idx) => {
+                const color = 0xff00ff; // Magenta for oblique
+                const offset = idx * 50;
+                
+                const modeIndex = acousticModes.findIndex(m => 
+                    m.nx === mode.nx && m.ny === mode.ny && m.nz === mode.nz
+                );
+                
+                const arrow1 = createCustomArrow(
+                    new THREE.Vector3(1, 0, 0),
+                    new THREE.Vector3(-arrowOffset, offset, offset),
+                    arrowLength * 0.5, color, arrowLength * 0.12, arrowLength * 0.08
+                );
+                const arrow2 = createCustomArrow(
+                    new THREE.Vector3(0, 1, 0),
+                    new THREE.Vector3(offset, -arrowOffset, offset),
+                    arrowLength * 0.5, color, arrowLength * 0.12, arrowLength * 0.08
+                );
+                const arrow3 = createCustomArrow(
+                    new THREE.Vector3(0, 0, 1),
+                    new THREE.Vector3(offset, offset, -arrowOffset),
+                    arrowLength * 0.5, color, arrowLength * 0.12, arrowLength * 0.08
+                );
+                
+                scene.add(arrow1.group);
+                scene.add(arrow2.group);
+                scene.add(arrow3.group);
+                modeArrows.push(arrow1, arrow2, arrow3);
+                arrowToModeMap.push(modeIndex, modeIndex, modeIndex);
+            });
+        }
+        
+        // Create custom arrow with better hover detection
+        function createCustomArrow(direction, origin, length, color, headLength, headWidth) {
+            const group = new THREE.Group();
+            
+            // Shaft (cylinder)
+            const shaftLength = length - headLength;
+            const shaftGeometry = new THREE.CylinderGeometry(headWidth * 0.3, headWidth * 0.3, shaftLength, 8);
+            const material = new THREE.MeshBasicMaterial({ 
+                color: color, 
+                transparent: true, 
+                opacity: 0.8 
+            });
+            const shaft = new THREE.Mesh(shaftGeometry, material);
+            
+            // Head (cone)
+            const headGeometry = new THREE.ConeGeometry(headWidth, headLength, 8);
+            const head = new THREE.Mesh(headGeometry, material);
+            
+            // Position shaft and head
+            shaft.position.y = shaftLength / 2;
+            head.position.y = shaftLength + headLength / 2;
+            
+            group.add(shaft);
+            group.add(head);
+            
+            // Orient the arrow
+            const axis = new THREE.Vector3(0, 1, 0);
+            const quaternion = new THREE.Quaternion();
+            quaternion.setFromUnitVectors(axis, direction.clone().normalize());
+            group.setRotationFromQuaternion(quaternion);
+            
+            // Position the arrow
+            group.position.copy(origin);
+            
+            return { group, cone: head, line: shaft };
+        }
+        
+
+        
+        // Highlight a specific mode in the plot
+        function highlightModePlot(modeIndex) {
+            if (!acousticModes.length) return;
+            
+            const sizes = acousticModes.map((m, i) => i === modeIndex ? 16 : 10);
+            const opacities = acousticModes.map((m, i) => i === modeIndex ? 1.0 : 0.6);
+            
+            Plotly.restyle('mode-plot', {
+                'marker.size': [sizes],
+                'marker.opacity': [opacities]
+            });
+        }
+        
+        // Plot acoustic modes
+        function plotModes() {
+            const modes = acousticModes;
+            
+            const trace = {
+                x: modes.map((m, i) => i + 1),
+                y: modes.map(m => m.freq),
+                text: modes.map(m => `${m.label}<br>${m.freq.toFixed(1)} Hz<br>${m.type}`),
+                mode: 'markers+lines',
+                type: 'scatter',
+                marker: {
+                    size: 10,
+                    color: modes.map(m => {
+                        if (m.type === 'axial') return '#00ff00';
+                        if (m.type === 'tangential') return '#ffff00';
+                        return '#ff00ff';
+                    })
+                },
+                line: {
+                    color: '#00ff00',
+                    width: 1
+                },
+                hovertemplate: '%{text}<extra></extra>'
+            };
+            
+            const layout = {
+                title: {
+                    text: 'Acoustic Pressure Modes',
+                    font: { color: '#0f0', family: 'Courier Prime' }
+                },
+                xaxis: {
+                    title: 'Mode Number',
+                    color: '#0f0',
+                    gridcolor: '#003300'
+                },
+                yaxis: {
+                    title: 'Frequency (Hz)',
+                    color: '#0f0',
+                    gridcolor: '#003300'
+                },
+                plot_bgcolor: '#000',
+                paper_bgcolor: '#000',
+                font: { color: '#0f0', family: 'Courier Prime' },
+                hovermode: 'closest'
+            };
+            
+            Plotly.newPlot('mode-plot', [trace], layout, { displayModeBar: false });
+            
+            // Add hover events for bidirectional highlighting
+            const plotDiv = document.getElementById('mode-plot');
+            
+            plotDiv.on('plotly_hover', (data) => {
+                const pointIndex = data.points[0].pointIndex;
+                highlightArrowsForMode(pointIndex);
+            });
+            
+            plotDiv.on('plotly_unhover', () => {
+                unhighlightAllArrows();
+            });
+        }
+        
+        // Highlight all arrows associated with a mode
+        function highlightArrowsForMode(modeIndex) {
+            arrowToModeMap.forEach((mapIndex, arrowIndex) => {
+                if (mapIndex === modeIndex) {
+                    highlightArrow(arrowIndex, true);
+                }
+            });
+        }
+        
+        // Unhighlight all arrows
+        function unhighlightAllArrows() {
+            modeArrows.forEach((arrow, idx) => {
+                highlightArrow(idx, false);
+            });
+        }
+        
+        // Update display
+        function updateDisplay() {
+            const { x, y, z } = boxDimensions;
+            const volume = (x * y * z) / 1e6; // mm³ to liters
+            
+            document.getElementById('dim-x').textContent = `${x.toFixed(1)} mm`;
+            document.getElementById('dim-y').textContent = `${y.toFixed(1)} mm`;
+            document.getElementById('dim-z').textContent = `${z.toFixed(1)} mm`;
+            document.getElementById('dim-vol').textContent = `${volume.toFixed(2)} L`;
+            
+            const modes = calculateAcousticModes();
+            const axial = modes.filter(m => m.type === 'axial');
+            const tangential = modes.filter(m => m.type === 'tangential');
+            const oblique = modes.filter(m => m.type === 'oblique');
+            
+            document.getElementById('mode-1st').textContent = axial[0] ? `${axial[0].freq.toFixed(1)} Hz` : '---';
+            document.getElementById('mode-tan').textContent = tangential[0] ? `${tangential[0].freq.toFixed(1)} Hz` : '---';
+            document.getElementById('mode-obl').textContent = oblique[0] ? `${oblique[0].freq.toFixed(1)} Hz` : '---';
+            
+            analyzePanels();
+            updatePanelDisplay();
+            updateAllPanelsSummary();
+            plotModes();
+            updateVisualization();
+        }
+        
+        // Update panel display
+        function updatePanelDisplay() {
+            const panelName = document.getElementById('panel-select').value;
+            const panel = panelData[panelName];
+            
+            if (!panel) {
+                console.warn('Panel data not yet initialized');
+                return;
+            }
+            
+            document.getElementById('current-panel-name').textContent = panel.name.toUpperCase();
+            document.getElementById('panel-dims').textContent = `${panel.width.toFixed(1)} × ${panel.height.toFixed(1)} mm`;
+            document.getElementById('panel-freq').textContent = `${panel.freq.toFixed(1)} Hz`;
+            
+            if (panel.overlaps.length > 0) {
+                const overlapText = panel.overlaps.map(m => `${m.label} (${m.freq.toFixed(0)}Hz)`).join(', ');
+                document.getElementById('panel-overlap').innerHTML = `<span class="warning">YES: ${overlapText}</span>`;
+            } else {
+                document.getElementById('panel-overlap').textContent = 'None';
+            }
+            
+            document.getElementById('panel-bracing').textContent = 'N/A';
+            document.getElementById('rad-unbraced').textContent = '1.00';
+            document.getElementById('rad-braced').textContent = 'N/A';
+            document.getElementById('rad-reduction').textContent = 'N/A';
+        }
+        
+        // Update all panels summary
+        function updateAllPanelsSummary() {
+            const summary = document.getElementById('all-panels-summary');
+            if (!summary) return;
+            
+            summary.innerHTML = '';
+            
+            if (Object.keys(panelData).length === 0) {
+                summary.innerHTML = '<div class="info-text">Calculating...</div>';
+                return;
+            }
+            
+            for (const [key, panel] of Object.entries(panelData)) {
+                const div = document.createElement('div');
+                div.className = 'stat-row';
+                div.style.cursor = 'pointer';
+                div.onclick = () => {
+                    document.getElementById('panel-select').value = key;
+                    updatePanelDisplay();
+                    updateVisualization();
+                };
+                
+                const overlapIndicator = panel.overlaps.length > 0 ? ' ⚠' : '';
+                
+                div.innerHTML = `
+                    <span class="stat-label">${panel.name}:</span>
+                    <span class="stat-value">${panel.freq.toFixed(0)} Hz${overlapIndicator}</span>
+                `;
+                summary.appendChild(div);
+            }
+        }
+        
+        // Setup UI controls
+        function setupControls() {
+            // Volume slider
+            document.getElementById('volume-slider').addEventListener('input', (e) => {
+                document.getElementById('volume-value').textContent = parseFloat(e.target.value).toFixed(1);
+                calculateDimensions();
+            });
+            
+            // Proportion select
+            document.getElementById('proportion-select').addEventListener('change', (e) => {
+                const proportionType = e.target.value;
+                const phi = 1.618033988749895;
+                
+                let ratioX, ratioY, ratioZ;
+                
+                if (proportionType === 'golden') {
+                    ratioX = 1;
+                    ratioY = phi;
+                    ratioZ = phi * phi;
+                } else if (proportionType === 'sqrt') {
+                    ratioX = 1;
+                    ratioY = Math.sqrt(2);
+                    ratioZ = Math.sqrt(3);
+                } else if (proportionType === 'fibonacci') {
+                    ratioX = 3;
+                    ratioY = 5;
+                    ratioZ = 8;
+                }
+                
+                if (proportionType !== 'custom') {
+                    document.getElementById('ratio-x-input').value = ratioX.toFixed(3);
+                    document.getElementById('ratio-y-input').value = ratioY.toFixed(3);
+                    document.getElementById('ratio-z-input').value = ratioZ.toFixed(3);
+                }
+                
+                calculateDimensions();
+            });
+            
+            // Ratio inputs
+            ['x', 'y', 'z'].forEach(axis => {
+                document.getElementById(`ratio-${axis}-input`).addEventListener('input', (e) => {
+                    document.getElementById('proportion-select').value = 'custom';
+                    calculateDimensions();
+                });
+            });
+            
+            // Thickness select
+            document.getElementById('thickness-select').addEventListener('change', (e) => {
+                const customInput = document.getElementById('thickness-custom');
+                if (e.target.value === 'custom') {
+                    customInput.style.display = 'block';
+                    thickness = parseFloat(customInput.value);
+                } else {
+                    customInput.style.display = 'none';
+                    thickness = parseFloat(e.target.value);
+                }
+                updateDisplay();
+            });
+            
+            document.getElementById('thickness-custom').addEventListener('input', (e) => {
+                thickness = parseFloat(e.target.value);
+                updateDisplay();
+            });
+            
+            // Material property inputs
+            document.getElementById('material-E').addEventListener('input', (e) => {
+                material.E = parseFloat(e.target.value) * 1e9;
+                updateDisplay();
+            });
+            
+            document.getElementById('material-rho').addEventListener('input', (e) => {
+                material.rho = parseFloat(e.target.value);
+                updateDisplay();
+            });
+            
+            document.getElementById('material-nu').addEventListener('input', (e) => {
+                material.nu = parseFloat(e.target.value);
+                updateDisplay();
+            });
+            
+            // Explode toggle
+            document.getElementById('explode-toggle').addEventListener('change', (e) => {
+                isExploded = e.target.checked;
+                updateVisualization();
+            });
+            
+            // Mode arrows toggle
+            document.getElementById('mode-arrows-toggle').addEventListener('change', (e) => {
+                showModeArrows = e.target.checked;
+                updateVisualization();
+            });
+            
+            // Panel select
+            document.getElementById('panel-select').addEventListener('change', () => {
+                updatePanelDisplay();
+                updateVisualization();
+            });
+            
+            // Reset button
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                document.getElementById('volume-slider').value = 10;
+                document.getElementById('volume-value').textContent = '10.0';
+                document.getElementById('proportion-select').value = 'golden';
+                document.getElementById('ratio-x-input').value = '1.000';
+                document.getElementById('ratio-y-input').value = '1.618';
+                document.getElementById('ratio-z-input').value = '2.618';
+                document.getElementById('thickness-select').value = '19';
+                document.getElementById('material-E').value = '3.5';
+                document.getElementById('material-rho').value = '700';
+                document.getElementById('material-nu').value = '0.30';
+                document.getElementById('explode-toggle').checked = false;
+                document.getElementById('mode-arrows-toggle').checked = true;
+                
+                thickness = 19;
+                material = {
+                    E: 3.5e9,
+                    rho: 700,
+                    nu: 0.3,
+                    name: 'MDF'
+                };
+                isExploded = false;
+                
+                calculateDimensions();
+            });
+            
+            // Export button
+            document.getElementById('export-btn').addEventListener('click', () => {
+                exportData();
+            });
+        }
+        
+        // Export data as JSON
+        function exportData() {
+            const data = {
+                enclosure: {
+                    volume_liters: parseFloat(document.getElementById('volume-slider').value),
+                    dimensions_mm: boxDimensions,
+                    proportions: document.getElementById('proportion-select').value,
+                    thickness_mm: thickness,
+                    material: {
+                        E_GPa: material.E / 1e9,
+                        rho_kgm3: material.rho,
+                        nu: material.nu
+                    }
+                },
+                acousticModes: acousticModes.map(m => ({
+                    indices: [m.nx, m.ny, m.nz],
+                    frequency_hz: m.freq,
+                    type: m.type
+                })),
+                panels: Object.entries(panelData).map(([name, panel]) => ({
+                    name: panel.name,
+                    dimensions_mm: { width: panel.width, height: panel.height },
+                    fundamental_hz: panel.freq,
+                    acoustic_overlaps: panel.overlaps.map(m => ({
+                        mode: m.label,
+                        freq_hz: m.freq
+                    }))
+                }))
+            };
+            
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'speaker-box-analysis.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Initialize
+        initThreeJS();
+        setupControls();
+        calculateDimensions();
+    </script>
+</body>
+</html>
