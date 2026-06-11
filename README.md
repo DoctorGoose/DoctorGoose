@@ -1,6 +1,6 @@
 # Hello, I'm Dr. Goose 👋
 
-I'm Dr. Jordan Weaver, co-founder of Stellar Perspectives and a postdoctoral researcher working on models of human disease.
+I'm Dr. Jordan Weaver, co-founder of Stellar Perspectives.
 
 ## About Me
 
